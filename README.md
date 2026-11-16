@@ -17,6 +17,9 @@ Advanced observability and diagnostics for Home Assistant. Detect availability p
 - **Visual direction: Hybrid.** Apple-inspired hierarchy, typography, spacing, restrained surfaces and accessibility, combined with modular interactive patterns inspired by Bubble Card. Original design; no copied implementation or runtime dependency.
 - **Organization: Both.** One overview card plus independent module cards, all sharing the same data model and design system.
 - **Configuration: UI-first.** Config Flow / Options Flow and a visual Lovelace card editor.
+- **Health score:** prominent 0–100 score with a transparent explanation of why it is below 100, including category deductions and links to contributing issues.
+- **Issues:** concise prioritized summary on the overview; selecting an issue opens detailed evidence, cause assessment and actionable, non-destructive troubleshooting advice.
+- **Card editor:** graphical choices for compact/detailed layout, charts on/off and chart range, issue detail as inline expansion or popup, visible sections and issue count.
 - **Incident detail:** facts, inferences and hypotheses must be clearly distinguished.
 - **Safety:** no automatic repair or configuration mutation without explicit approval.
 
@@ -26,7 +29,7 @@ Advanced observability and diagnostics for Home Assistant. Detect availability p
 - Integrations: setup/load failures and supported diagnostic signals.
 - Automations: execution problems using supported interfaces, with optional interoperability.
 - Incident intelligence: grouping, correlation, severity and lifecycle.
-- Health score: score, status, trend and confidence/coverage.
+- Health score: score, status, transparent deductions, trend and confidence/coverage.
 
 ## Repository layout
 This repository contains the Home Assistant backend and product documentation. The Lovelace frontend will be a separate companion package/repository: `ha-health-monitor-card`.

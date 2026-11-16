@@ -42,11 +42,16 @@ Frontend and backend are independently packaged. The card must gracefully report
 - Lifecycle: detected, active, acknowledged/dismissed and resolved.
 - Store timestamps, duration, severity, source monitor and safe diagnostic context.
 
-### Health score
-Initial candidate weights, subject to validation: availability 30%, freshness 25%, integrations 25%, automations 10%, active incidents 10%.
-- Always accompany score with coverage/confidence.
-- Missing telemetry must not silently improve score.
-- Validate weights and thresholds with real installations.
+### Health score and explainability
+The score is user-facing and must be explainable down to the issues and scoring rules that produced it.
+- Initial candidate category weights (subject to validation): availability 30%, freshness 25%, integrations 25%, automations 10%, active incidents 10%.
+- Keep weights and scoring rules in one backend scoring model; do not duplicate score calculations in frontend code.
+- Return category-level possible points, earned points, deductions and contributing issue IDs/rule identifiers.
+- Each deduction must have a traceable reason and must be attributable to an observation/incident.
+- Avoid double penalties when multiple monitors report symptoms from the same root incident.
+- Include coverage/confidence and category assessment state. Insufficient telemetry/baseline must not be silently counted as healthy or grant full points.
+- The frontend must show a “Why not 100?” breakdown and let the user navigate from a deduction to the contributing issue(s).
+- Validate weights, caps, severity multipliers and recovery behavior with real installations before release. Candidate weights are not yet a final product promise.
 
 ## 3. Initial entities
 - `sensor.ha_health_score`
@@ -59,7 +64,7 @@ Initial candidate weights, subject to validation: availability 30%, freshness 25
 - `sensor.ha_last_scan`
 - `binary_sensor.ha_system_healthy`
 
-Count sensors expose structured summaries in attributes; do not create an entity per incident.
+Count sensors expose structured summaries in attributes; do not create an entity per incident. The score entity should expose a structured breakdown (category weights, possible/earned points, deductions, coverage and contributing incident references) using a stable, documented schema.
 
 Proposed services:
 - `health_monitor.scan_now`
@@ -96,10 +101,12 @@ Use Home Assistant selectors where available. YAML is never mandatory.
 Companion package: `ha-health-monitor-card`.
 - One overview card and independent module cards.
 - Shared components, tokens, icons, localization and data adapter.
-- Visual editor for card type, sections, density, module selection and navigation.
+- Visual editor with explicit compact/detailed layout, charts on/off, chart time range, issue detail mode (inline expansion or popup), visible sections, issue count and module/entity filters.
+- Score breakdown UI with “Why not 100?” and clickable deductions linking to the contributing issue details.
+- Issue summaries are visible on the overview; full diagnosis and safe remediation guidance are available on selection.
+- Keep facts, inferences and hypotheses visually distinct.
 - Light/dark theme using HA theme variables and standard `ha-card` integration.
-- Responsive mobile/tablet/desktop behavior.
-- Incident popup/overlay is the default proposed interaction, with accessible focus/close behavior.
+- Responsive mobile/tablet/desktop behavior and accessible dialog/focus behavior.
 - Avoid undocumented frontend internals where possible.
 - No runtime dependency on Bubble Card, Mushroom or a CDN framework.
 
@@ -143,5 +150,7 @@ This layout may evolve with implementation.
 - Startup/shutdown, unknown/unavailable transitions and history restoration.
 - Entities with no stable update cadence.
 - Partial coverage and score confidence.
+- Score deductions trace to rule IDs and issue IDs; correlated symptoms are not double-counted.
+- Tests for unassessed categories, score explanation and recovery after issue resolution.
 - Static checks, formatting and HA integration validation in CI.
 - Manual validation on real HA OS before release.
