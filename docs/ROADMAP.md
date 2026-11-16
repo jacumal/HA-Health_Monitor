@@ -11,7 +11,9 @@ All work must preserve the five non-negotiable pillars: real usefulness, easy an
 - [x] Define architecture and UI prototype specification.
 - [x] Define product pillars and acceptance gate.
 - [x] Add internationalization as a foundational requirement (English + Spanish initial locales).
-- [ ] Review and validate prototype interactions and visual editor options.
+- [x] Define visual editor essentials/advanced controls, defaults, validation and migration behavior.
+- [x] Define score explanation contract and interaction acceptance scenarios.
+- [ ] Review the resulting interaction prototype with the product owner before frontend implementation.
 
 ## Phase 1 — Backend foundation
 - [ ] Integration skeleton and manifest.
