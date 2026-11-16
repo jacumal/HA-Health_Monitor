@@ -6,12 +6,14 @@ Advanced observability and diagnostics for Home Assistant. Detect availability p
 
 > Status: design and prototyping. Any metrics in mockups are illustrative, not live measurements.
 
-## Product principles
-1. Evidence-based diagnostics and useful alerts, not noise.
-2. A polished, accessible and visually coherent interface.
-3. Graphical setup by default; YAML is optional.
-4. Safe by default: monitor, explain and recommend. Never modify devices or configuration without explicit user action.
-5. Separate backend and frontend packages with a documented data contract.
+## Four non-negotiable product pillars
+
+1. **Real usefulness:** detect real issues, avoid noise, explain why they matter, show why health points were lost and provide practical troubleshooting advice.
+2. **Easy and pleasant interface:** polished, intuitive, responsive and accessible; concise summaries with deeper details on demand.
+3. **Easy configuration:** graphical setup and sensible defaults. YAML is optional, never required for normal use.
+4. **First-class Lovelace card:** an original Hybrid design combining Apple-inspired visual clarity with Bubble Card-inspired modular interactions.
+
+These are acceptance criteria for every feature and release. See [Product pillars](docs/PRODUCT_PILLARS.md).
 
 ## Confirmed product decisions
 - **Visual direction: Hybrid.** Apple-inspired hierarchy, typography, spacing, restrained surfaces and accessibility, combined with modular interactive patterns inspired by Bubble Card. Original design; no copied implementation or runtime dependency.
@@ -35,6 +37,7 @@ Advanced observability and diagnostics for Home Assistant. Detect availability p
 This repository contains the Home Assistant backend and product documentation. The Lovelace frontend will be a separate companion package/repository: `ha-health-monitor-card`.
 
 ## Documentation
+- [Product pillars](docs/PRODUCT_PILLARS.md)
 - [Technical architecture](docs/ARCHITECTURE.md)
 - [UI prototype specification](docs/UI_PROTOTYPE.md)
 - [Roadmap](docs/ROADMAP.md)
