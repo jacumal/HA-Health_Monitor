@@ -1,6 +1,6 @@
 # Product pillars and non-negotiable acceptance criteria
 
-These four pillars define whether HA Health Monitor is successful. They are product requirements, not optional polish or future enhancements. Every architecture, feature and release decision must support them.
+These five pillars define whether HA Health Monitor is successful. They are product requirements, not optional polish or future enhancements. Every architecture, feature and release decision must support them.
 
 ## 1. Real usefulness
 
@@ -59,6 +59,22 @@ The card package must provide:
 - A visual editor for compact/detailed layout, charts on/off and chart period, inline expansion or popup, visible sections and issue count.
 - Shared design tokens and data contract across all card types.
 
+## 5. Internationalization and localization
+
+HA Health Monitor is intended for an international audience. Multilingual support is a product requirement from the beginning, not a later translation task.
+
+Acceptance criteria:
+- All user-facing integration and Lovelace strings must be externalized into translation catalogs; no user-visible text hard-coded in components or Python modules.
+- Initial supported languages: English (default/fallback) and Spanish. The architecture must make adding further languages straightforward.
+- Respect the Home Assistant user's selected language/locale where available.
+- Use locale-aware date/time, number, decimal, percentage and unit formatting; use Home Assistant conventions and unit systems where possible.
+- Translate setup flows, options, selectors, card editor labels, statuses, severities, issue summaries, explanations, recommendations, empty/error states, notifications and accessibility labels.
+- Keep entity IDs, service IDs, domain names, protocol terms and user-provided entity/device names stable; translate display labels, not identifiers.
+- Avoid building sentences by concatenating translated fragments. Use complete translatable messages with placeholders and pluralization support.
+- Keep translation keys stable and documented; include a process for detecting missing and obsolete translations.
+- A missing translation must fall back cleanly to English rather than displaying a blank label or raw key.
+- Technical diagnostic details may preserve original error text where translation would obscure the source, but should provide a localized explanation around it.
+
 ## Product decision gate
 
 Before accepting a feature or release, ask:
@@ -66,5 +82,6 @@ Before accepting a feature or release, ask:
 2. Is it clear and pleasant to use?
 3. Can a normal user configure it graphically?
 4. Does it fit the coherent Hybrid Lovelace experience?
+5. Is every user-facing part internationalization-ready?
 
 If a change weakens any pillar, redesign it before release.

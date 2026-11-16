@@ -121,7 +121,18 @@ The editor must expose clear, graphical controls rather than requiring YAML. It 
 ### Defaults
 Provide sensible defaults so adding the card immediately produces a useful dashboard. Put advanced controls in collapsible sections. YAML is an optional escape hatch, never the primary setup path.
 
-## 5. Navigation prototype
+## 5. Internationalization and localization
+The Lovelace interface is intended for international users and must be multilingual from its first implementation.
+- Initial locales: English (default/fallback) and Spanish.
+- Resolve the Home Assistant user's selected language where supported.
+- Externalize every user-visible label, help text, status, severity, issue explanation, recommendation, tooltip, empty/error state and editor option into locale catalogs.
+- Use locale-aware dates, times, numbers, decimal separators, percentages and units.
+- Support named placeholders and plural forms; do not concatenate translated fragments.
+- Keep entity IDs, service IDs and machine-readable values language-independent.
+- Fall back to English for missing translations and never show raw translation keys.
+- Additional languages must be addable by contributing a catalog, without changing UI component logic.
+
+## 6. Navigation prototype
 Three conceptual views:
 - Overview: global score, score explanation, domain tiles, prioritized issues and coverage.
 - Modules: detail summaries for each monitoring engine.
@@ -129,7 +140,7 @@ Three conceptual views:
 
 Production Lovelace implementation should use native card configuration and accessible overlay/navigation patterns, not assume a standalone app route.
 
-## 6. Sample data only
+## 7. Sample data only
 The initial concept may use:
 - Score 94/100.
 - 0 unavailable entities.
@@ -140,7 +151,7 @@ The initial concept may use:
 
 Every preview must be labelled sample data. The production card must never fall back to sample values when integration data is absent. Example deductions must be internally consistent and clearly labelled illustrative.
 
-## 7. Visual system
+## 8. Visual system
 - Prefer Home Assistant theme variables.
 - Light/dark theme support.
 - Pair semantic status colors with text/icons.
@@ -149,7 +160,7 @@ Every preview must be labelled sample data. The production card must never fall 
 - Readable typography and layouts suitable for narrow screens.
 - Compact/detailed options and user-configurable sections.
 
-## 8. Prototype acceptance criteria
+## 9. Prototype acceptance criteria
 - Overall health and score are understandable at a glance.
 - User can see exactly why the score is below 100 and trace each deduction to issues/rules.
 - Score communicates coverage/confidence and never hides missing telemetry.
@@ -157,6 +168,7 @@ Every preview must be labelled sample data. The production card must never fall 
 - Selecting an issue opens a complete, actionable diagnosis with safe recommendations.
 - Facts, inferences and hypotheses are clearly distinguished.
 - The editor lets users choose compact/detailed, charts on/off, issue detail interaction and visible sections without YAML.
+- Interface follows HA locale, supports initial English/Spanish catalogs and locale-aware formatting.
 - Handle no incidents, missing data, partial coverage and setup-required states.
 - Overview and independent modules feel like one coherent product.
 - Works on mobile/desktop and light/dark themes.

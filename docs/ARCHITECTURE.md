@@ -64,7 +64,7 @@ The score is user-facing and must be explainable down to the issues and scoring 
 - `sensor.ha_last_scan`
 - `binary_sensor.ha_system_healthy`
 
-Count sensors expose structured summaries in attributes; do not create an entity per incident. The score entity should expose a structured breakdown (category weights, possible/earned points, deductions, coverage and contributing incident references) using a stable, documented schema.
+Count sensors expose structured summaries in attributes; do not create an entity per incident. The score entity should expose a structured breakdown (category weights, possible/earned points, deductions, coverage and contributing incident references) using a stable, documented schema. Entity IDs and service IDs remain language-independent.
 
 Proposed services:
 - `health_monitor.scan_now`
@@ -91,13 +91,25 @@ Config Flow defaults should make first install useful without a long questionnai
 
 Use Home Assistant selectors where available. YAML is never mandatory.
 
-## 6. Diagnostics and privacy
+## 6. Internationalization architecture
+International support is required from the first implementation, not deferred until release.
+- Backend: Home Assistant translation catalogs for config flow, options flow, selectors, entity names/descriptions, services and user-facing notifications.
+- Frontend: independent locale catalogs for every visible card/editor string, with a small translation utility and documented key schema.
+- Initial locales: English (`en`, canonical source and fallback) and Spanish (`es`). Additional locales must be addable without changing component logic.
+- Resolve the user's Home Assistant language/locale where supported; use English fallback for missing keys.
+- Use locale-aware formatting for dates, times, numbers, decimal separators, percentages and units; use HA-provided formatting/conventions where possible.
+- Use complete messages with named placeholders and plural forms; never concatenate translated sentence fragments.
+- Keep entity IDs, service IDs, internal enums and machine-readable identifiers stable and language-neutral. Translate display names and descriptions only.
+- Preserve original technical error text when needed for troubleshooting, while localizing the explanation around it.
+- Add translation completeness checks and tests for fallback, pluralization, placeholders and locale formatting.
+
+## 7. Diagnostics and privacy
 - Provide exportable diagnostics with relevant entity metadata.
 - Redact tokens, credentials, secret-bearing URLs and sensitive values.
 - Explain included diagnostic data before export.
 - No external data transmission.
 
-## 7. Frontend architecture
+## 8. Frontend architecture
 Companion package: `ha-health-monitor-card`.
 - One overview card and independent module cards.
 - Shared components, tokens, icons, localization and data adapter.
@@ -107,10 +119,10 @@ Companion package: `ha-health-monitor-card`.
 - Keep facts, inferences and hypotheses visually distinct.
 - Light/dark theme using HA theme variables and standard `ha-card` integration.
 - Responsive mobile/tablet/desktop behavior and accessible dialog/focus behavior.
-- Avoid undocumented frontend internals where possible.
+- All UI strings, including editor controls, status labels, severity names, issue explanations and recommendations, must use locale catalogs.
 - No runtime dependency on Bubble Card, Mushroom or a CDN framework.
 
-## 8. Proposed backend structure
+## 9. Proposed backend structure
 ```text
 custom_components/ha_health_monitor/
   __init__.py
@@ -126,8 +138,15 @@ custom_components/ha_health_monitor/
   binary_sensor.py
   services.yaml
   strings.json
-  translations/{en,es}.json
-  monitors/{__init__,availability,freshness,integrations,automations}.py
+  translations/
+    en.json
+    es.json
+  monitors/
+    __init__.py
+    availability.py
+    freshness.py
+    integrations.py
+    automations.py
 tests/
   test_config_flow.py
   test_availability.py
@@ -135,6 +154,7 @@ tests/
   test_integrations.py
   test_incidents.py
   test_scoring.py
+  test_translations.py
 .github/workflows/validate.yaml
 hacs.json
 pyproject.toml
@@ -145,12 +165,13 @@ CHANGELOG.md
 ```
 This layout may evolve with implementation.
 
-## 9. Quality gates
+## 10. Quality gates
 - Unit tests for each monitor and incident transitions.
 - Startup/shutdown, unknown/unavailable transitions and history restoration.
 - Entities with no stable update cadence.
 - Partial coverage and score confidence.
 - Score deductions trace to rule IDs and issue IDs; correlated symptoms are not double-counted.
 - Tests for unassessed categories, score explanation and recovery after issue resolution.
+- Translation catalog validation, fallback tests and locale-formatting tests.
 - Static checks, formatting and HA integration validation in CI.
 - Manual validation on real HA OS before release.
