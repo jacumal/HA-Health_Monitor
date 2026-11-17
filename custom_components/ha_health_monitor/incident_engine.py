@@ -7,6 +7,7 @@ from typing import Any
 
 MAX_INCIDENT_HISTORY = 500
 VALID_STATUSES = {"active", "resolved"}
+VALID_CATEGORIES = {"availability", "freshness"}
 
 
 def make_issue_id(rule_id: str, entity_id: str) -> str:
@@ -67,11 +68,17 @@ def reconcile_incidents(
         if isinstance(item, dict)
         and isinstance(item.get("issue_id"), str)
         and item.get("status") in VALID_STATUSES
+        and item.get("category") in VALID_CATEGORIES
+        and isinstance(item.get("entity_id"), str)
+        and isinstance(item.get("rule_id"), str)
     }
     current_by_id = {
         item["issue_id"]: item
         for item in observations
-        if isinstance(item, dict) and isinstance(item.get("issue_id"), str)
+        if isinstance(item, dict)
+        and isinstance(item.get("issue_id"), str)
+        and isinstance(item.get("entity_id"), str)
+        and item.get("category") in VALID_CATEGORIES
     }
     history: list[dict[str, Any]] = []
 

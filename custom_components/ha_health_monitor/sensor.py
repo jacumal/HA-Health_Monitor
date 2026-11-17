@@ -140,6 +140,8 @@ class HealthMonitorSensor(CoordinatorEntity[HealthMonitorCoordinator], SensorEnt
                 "selected_entity_count": data["freshness_entity_count"],
                 "learning_entity_count": data["freshness_learning_count"],
                 "monitoring_entity_count": data["freshness_monitoring_count"],
+                "missing_entity_count": data["freshness_missing_count"],
+                "paused_entity_count": data["freshness_paused_count"],
                 "profiles": data["freshness_profiles"],
             }
         return {}

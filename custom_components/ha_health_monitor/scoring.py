@@ -52,43 +52,49 @@ def calculate_health_score(
             item for item in active_incidents if item.get("category") == category
         ]
         deductions = []
+        remaining = possible
         for incident in category_incidents:
             if category == "availability":
-                points = 6.0 if incident.get("severity") == "error" else 3.0
+                base_points = 6.0 if incident.get("severity") == "error" else 3.0
                 rule_id = "score.availability.unavailable"
             elif category == "freshness":
-                points = 4.0
+                base_points = 4.0
                 rule_id = "score.freshness.stale"
             else:
                 continue
+            points = min(base_points, remaining)
+            if points <= 0:
+                continue
+            remaining -= points
             deduction = {
                 "issue_id": incident["issue_id"],
                 "rule_id": rule_id,
                 "category": category,
                 "entity_id": incident["entity_id"],
-                "points": points,
+                "points": round(points, 2),
                 "reason": "active_monitor_finding",
             }
             deductions.append(deduction)
             all_deductions.append(deduction)
 
-        lost = min(possible, sum(item["points"] for item in deductions))
-        earned = max(0.0, possible - lost)
+        lost = possible - remaining
+        earned = remaining
         assessed_points += possible
         earned_points += earned
+        assessment = (
+            "assessed"
+            if coverage >= 1
+            else "partial"
+            if coverage > 0
+            else "not_assessed"
+        )
         breakdown[category] = {
             "weight": weight,
             "coverage_percent": round(coverage * 100, 1),
             "possible_points": round(possible, 2),
             "earned_points": round(earned, 2),
             "deducted_points": round(lost, 2),
-            "assessment": (
-                "assessed"
-                if coverage >= 1
-                else "partial"
-                if coverage > 0
-                else "not_assessed"
-            ),
+            "assessment": assessment,
             "issue_ids": [item["issue_id"] for item in category_incidents],
             "deductions": deductions,
         }
@@ -119,7 +125,12 @@ def calculate_health_score(
         "unassessed_categories": [
             category
             for category, result in breakdown.items()
-            if result["assessment"] != "assessed"
+            if result["assessment"] == "not_assessed"
+        ],
+        "partial_categories": [
+            category
+            for category, result in breakdown.items()
+            if result["assessment"] == "partial"
         ],
         "categories": breakdown,
         "deductions": all_deductions,

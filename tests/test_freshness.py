@@ -133,3 +133,23 @@ def test_only_selected_and_trained_entities_can_be_stale():
     )
     assert [item["entity_id"] for item in stale] == ["sensor.temperature"]
     assert profiles["sensor.temperature"]["status"] == "monitoring"
+
+
+def test_missing_and_unknown_entities_are_not_counted_as_monitoring():
+    now = datetime(2026, 11, 17, 10, 0, tzinfo=UTC)
+    learner, _ = trained_learner("sensor.ready")
+    states = [
+        make_state("sensor.ready", "21", now - timedelta(minutes=5)),
+        make_state("sensor.unknown", "unknown", now - timedelta(hours=1)),
+    ]
+    stale, profiles = collect_adaptive_stale(
+        states,
+        {"sensor.ready", "sensor.unknown", "sensor.missing"},
+        set(),
+        learner,
+        now,
+    )
+    assert stale == []
+    assert profiles["sensor.unknown"]["status"] == "paused"
+    assert profiles["sensor.missing"]["status"] == "missing"
+    assert profiles["sensor.ready"]["status"] == "monitoring"

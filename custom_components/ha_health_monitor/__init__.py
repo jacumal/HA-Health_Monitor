@@ -77,8 +77,7 @@ async def async_unload_entry(
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
         await entry.runtime_data.async_shutdown()
-        if not hass.config_entries.async_entries(DOMAIN):
-            for service in (SERVICE_SCAN_NOW, SERVICE_RESET_FRESHNESS_LEARNING):
-                if hass.services.has_service(DOMAIN, service):
-                    hass.services.async_remove(DOMAIN, service)
+        for service in (SERVICE_SCAN_NOW, SERVICE_RESET_FRESHNESS_LEARNING):
+            if hass.services.has_service(DOMAIN, service):
+                hass.services.async_remove(DOMAIN, service)
     return unloaded

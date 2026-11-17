@@ -230,6 +230,12 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
                 profile["status"] == "learning" for profile in profiles.values()
             ),
             "freshness_monitoring_count": freshness_monitoring_count,
+            "freshness_missing_count": sum(
+                profile["status"] == "missing" for profile in profiles.values()
+            ),
+            "freshness_paused_count": sum(
+                profile["status"] == "paused" for profile in profiles.values()
+            ),
             "freshness_profiles": profiles,
             "availability_grace_seconds": int(
                 AVAILABILITY_GRACE_PERIOD.total_seconds()

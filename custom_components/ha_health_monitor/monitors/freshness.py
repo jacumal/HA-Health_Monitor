@@ -220,8 +220,15 @@ def collect_adaptive_stale(
         state = state_by_id.get(entity_id)
         expected = learner.expected_interval(entity_id)
         threshold = learner.stale_after(entity_id)
+        profile_status = (
+            "missing"
+            if state is None
+            else "paused"
+            if state.state in ("unknown", "unavailable")
+            else learner.status(entity_id)
+        )
         profiles[entity_id] = {
-            "status": learner.status(entity_id),
+            "status": profile_status,
             "sample_count": learner.sample_count(entity_id),
             "expected_interval_seconds": (
                 round(expected) if expected is not None else None

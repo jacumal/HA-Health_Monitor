@@ -73,3 +73,26 @@ def test_active_issues_produce_traceable_deductions_once():
         "issue_avail_1",
         "issue_stale_1",
     }
+
+
+def test_category_caps_are_reflected_in_individual_deductions():
+    incidents = [
+        {
+            "issue_id": f"issue_{index}",
+            "category": "availability",
+            "entity_id": f"sensor.{index}",
+            "severity": "error",
+        }
+        for index in range(8)
+    ]
+    result = calculate_health_score(
+        incidents,
+        availability_eligible_count=10,
+        availability_assessed_count=10,
+        freshness_enabled=False,
+        selected_freshness_count=0,
+        freshness_monitoring_count=0,
+    )
+    availability = result["categories"]["availability"]
+    assert availability["deducted_points"] == 30
+    assert sum(item["points"] for item in availability["deductions"]) == 30
