@@ -1,0 +1,3 @@
+scan_now:
+  name: Scan now
+  description: Run an immediate HA Health Monitor scan.
