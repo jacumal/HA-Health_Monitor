@@ -48,7 +48,6 @@ class HAHealthMonitorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
     """Handle integration options."""
 
-
     async def async_step_init(self, user_input=None):
         """Manage monitoring options."""
         if user_input is not None:
