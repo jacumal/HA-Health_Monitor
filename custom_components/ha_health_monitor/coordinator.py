@@ -28,10 +28,10 @@ from .const import (
     DOMAIN,
 )
 from .incident_engine import build_observations, correlate_incidents, reconcile_incidents
-from .monitors.availability import collect_unavailable
 from .monitors.automations import collect_automation_health
-from .monitors.integrations import collect_integration_health
+from .monitors.availability import collect_unavailable
 from .monitors.freshness import FreshnessLearner, collect_adaptive_stale
+from .monitors.integrations import collect_integration_health
 from .scoring import calculate_health_score
 
 _LOGGER = logging.getLogger(__name__)
