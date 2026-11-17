@@ -14,26 +14,32 @@
     "step": {
       "init": {
         "title": "Monitoring settings",
-        "description": "Choose what to monitor. Freshness monitoring is opt-in and only applies to entities you select."
+        "description": "Choose what to monitor. Freshness monitoring is opt-in and only applies to entities you select.",
+        "data": {
+          "scan_interval_minutes": "Scan interval",
+          "excluded_entities": "Entities to exclude",
+          "monitor_freshness": "Enable freshness monitoring",
+          "freshness_entities": "Entities to check for stale updates",
+          "freshness_threshold_minutes": "Maximum time without an update"
+        },
+        "data_description": {
+          "scan_interval_minutes": "How often Home Assistant state is checked.",
+          "excluded_entities": "These entities are excluded from availability and freshness checks.",
+          "monitor_freshness": "Disabled by default to avoid false positives for entities that update only when their value changes.",
+          "freshness_entities": "Select only entities expected to update regularly.",
+          "freshness_threshold_minutes": "An issue is reported when a selected entity has not changed for longer than this period."
+        }
       }
     }
   },
   "entity": {
     "sensor": {
-      "unavailable_entities": {
-        "name": "Unavailable entities"
-      },
-      "stale_entities": {
-        "name": "Stale entities"
-      },
-      "last_scan": {
-        "name": "Last scan"
-      }
+      "unavailable_entities": { "name": "Unavailable entities" },
+      "stale_entities": { "name": "Stale entities" },
+      "last_scan": { "name": "Last scan" }
     },
     "binary_sensor": {
-      "system_healthy": {
-        "name": "System has issues"
-      }
+      "system_healthy": { "name": "System has issues" }
     }
   }
 }
