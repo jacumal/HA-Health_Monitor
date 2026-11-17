@@ -1,137 +1,64 @@
-"""Explainable, coverage-aware health score."""
-
+"""Explainable, coverage-aware score across all operational monitor domains."""
 from __future__ import annotations
-
 from typing import Any
 
-# Provisional product weights; validate before a stable release.
-CATEGORY_WEIGHTS = {
-    "availability": 30,
-    "freshness": 25,
-    "integrations": 25,
-    "automations": 10,
-    "incident_intelligence": 10,
-}
+# Incident intelligence is cross-cutting; it must not apply a second penalty.
+CATEGORY_WEIGHTS = {"availability": 30, "freshness": 20, "integrations": 25, "automations": 25}
 
+def _coverage(eligible: int, assessed: int) -> float:
+    return min(max(assessed, 0) / eligible, 1.0) if eligible > 0 else 0.0
 
-def calculate_health_score(
-    active_incidents: list[dict[str, Any]],
-    *,
-    availability_eligible_count: int,
-    availability_assessed_count: int,
-    freshness_enabled: bool,
-    selected_freshness_count: int,
-    freshness_monitoring_count: int,
-) -> dict[str, Any]:
-    """Calculate score, coverage and deductions without hiding unassessed areas."""
-    category_coverage = {
-        "availability": (
-            min(availability_assessed_count / availability_eligible_count, 1.0)
-            if availability_eligible_count > 0
-            else 0.0
-        ),
-        "freshness": (
-            min(freshness_monitoring_count / selected_freshness_count, 1.0)
-            if freshness_enabled and selected_freshness_count > 0
-            else 0.0
-        ),
-        "integrations": 0.0,
-        "automations": 0.0,
-        "incident_intelligence": 0.0,
+def calculate_health_score(active_incidents: list[dict[str, Any]], *,
+    availability_eligible_count: int, availability_assessed_count: int,
+    freshness_enabled: bool, selected_freshness_count: int,
+    freshness_monitoring_count: int, integration_eligible_count: int = 0,
+    integration_assessed_count: int = 0, automation_eligible_count: int = 0,
+    automation_assessed_count: int = 0) -> dict[str, Any]:
+    coverage = {
+        "availability": _coverage(availability_eligible_count, availability_assessed_count),
+        "freshness": _coverage(selected_freshness_count, freshness_monitoring_count) if freshness_enabled else 1.0,
+        "integrations": _coverage(integration_eligible_count, integration_assessed_count),
+        "automations": _coverage(automation_eligible_count, automation_assessed_count),
     }
-
-    breakdown: dict[str, dict[str, Any]] = {}
-    all_deductions: list[dict[str, Any]] = []
-    assessed_points = 0.0
-    earned_points = 0.0
-
+    breakdown, deductions_all = {}, []
+    assessed_points = earned_points = 0.0
+    base_points = {"availability": 6.0, "freshness": 4.0, "integrations": 10.0, "automations": 8.0}
     for category, weight in CATEGORY_WEIGHTS.items():
-        coverage = category_coverage[category]
-        possible = weight * coverage
-        category_incidents = [
-            item for item in active_incidents if item.get("category") == category
-        ]
-        deductions = []
-        remaining = possible
-        for incident in category_incidents:
-            if category == "availability":
-                base_points = 6.0 if incident.get("severity") == "error" else 3.0
-                rule_id = "score.availability.unavailable"
-            elif category == "freshness":
-                base_points = 4.0
-                rule_id = "score.freshness.stale"
-            else:
-                continue
-            points = min(base_points, remaining)
+        possible = weight * coverage[category]
+        items = [x for x in active_incidents if x.get("category") == category]
+        remaining, deductions = possible, []
+        for issue in sorted(items, key=lambda x: (x.get("severity") != "error", x.get("issue_id", ""))):
+            points = min(base_points[category] if issue.get("severity") == "error" else base_points[category] / 2, remaining)
             if points <= 0:
                 continue
             remaining -= points
             deduction = {
-                "issue_id": incident["issue_id"],
-                "rule_id": rule_id,
-                "category": category,
-                "entity_id": incident["entity_id"],
-                "points": round(points, 2),
+                "issue_id": issue["issue_id"],
+                "rule_id": f"score.{category}.{issue.get('rule_id', 'finding').split('.')[-1]}",
+                "category": category, "entity_id": issue.get("entity_id"),
+                "target": issue.get("target"), "points": round(points, 2),
                 "reason": "active_monitor_finding",
+                "correlation_key": issue.get("correlation_key"),
             }
             deductions.append(deduction)
-            all_deductions.append(deduction)
-
-        lost = possible - remaining
-        earned = remaining
+            deductions_all.append(deduction)
         assessed_points += possible
-        earned_points += earned
-        assessment = (
-            "assessed"
-            if coverage >= 1
-            else "partial"
-            if coverage > 0
-            else "not_assessed"
-        )
+        earned_points += remaining
+        state = "assessed" if coverage[category] >= 1 else "partial" if coverage[category] > 0 else "not_assessed"
         breakdown[category] = {
-            "weight": weight,
-            "coverage_percent": round(coverage * 100, 1),
-            "possible_points": round(possible, 2),
-            "earned_points": round(earned, 2),
-            "deducted_points": round(lost, 2),
-            "assessment": assessment,
-            "issue_ids": [item["issue_id"] for item in category_incidents],
-            "deductions": deductions,
+            "weight": weight, "coverage_percent": round(coverage[category] * 100, 1),
+            "possible_points": round(possible, 2), "earned_points": round(remaining, 2),
+            "deducted_points": round(possible - remaining, 2), "assessment": state,
+            "issue_ids": [x["issue_id"] for x in items], "deductions": deductions,
         }
-
-    coverage_percent = round(assessed_points, 1)
-    score = (
-        round(earned_points / assessed_points * 100)
-        if assessed_points > 0
-        else None
-    )
-    if score is None:
-        status = "not_assessed"
-    elif coverage_percent < 100:
-        status = "partial"
-    elif score >= 90:
-        status = "healthy"
-    elif score >= 70:
-        status = "attention"
-    else:
-        status = "unhealthy"
-
+    percent = round(assessed_points, 1)
+    score = round(earned_points / assessed_points * 100) if assessed_points else None
+    status = ("not_assessed" if score is None else "partial" if percent < 100
+              else "healthy" if score >= 90 else "attention" if score >= 70 else "unhealthy")
     return {
-        "score": score,
-        "status": status,
-        "coverage_percent": coverage_percent,
-        "assessed_points": round(assessed_points, 2),
-        "possible_points": 100,
-        "unassessed_categories": [
-            category
-            for category, result in breakdown.items()
-            if result["assessment"] == "not_assessed"
-        ],
-        "partial_categories": [
-            category
-            for category, result in breakdown.items()
-            if result["assessment"] == "partial"
-        ],
-        "categories": breakdown,
-        "deductions": all_deductions,
+        "score": score, "status": status, "coverage_percent": percent,
+        "assessed_points": round(assessed_points, 2), "possible_points": 100,
+        "unassessed_categories": [k for k,v in breakdown.items() if v["assessment"] == "not_assessed"],
+        "partial_categories": [k for k,v in breakdown.items() if v["assessment"] == "partial"],
+        "categories": breakdown, "deductions": deductions_all,
     }
