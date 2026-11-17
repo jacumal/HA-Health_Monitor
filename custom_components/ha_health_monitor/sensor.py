@@ -61,6 +61,11 @@ class HealthMonitorSensor(CoordinatorEntity[HealthMonitorCoordinator], SensorEnt
         self._attr_unique_id = f"{coordinator.entry.entry_id}_{description.key}"
 
     @property
+    def suggested_object_id(self) -> str:
+        """Return a stable, language-independent entity ID suffix."""
+        return f"ha_health_monitor_{self.entity_description.key}"
+
+    @property
     def native_value(self):
         """Return the current sensor value."""
         if self.coordinator.data is None:
