@@ -27,8 +27,10 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
-from .incident_engine import build_observations, reconcile_incidents
+from .incident_engine import build_observations, correlate_incidents, reconcile_incidents
 from .monitors.availability import collect_unavailable
+from .monitors.integrations import collect_integration_health
+from .monitors.automations import collect_automation_health
 from .monitors.freshness import FreshnessLearner, collect_adaptive_stale
 from .scoring import calculate_health_score
 
@@ -205,7 +207,14 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
                 f"Unable to inspect Home Assistant states: {err}"
             ) from err
 
-        observations = build_observations(unavailable, stale)
+        integration_health = collect_integration_health(self.hass.config_entries.async_entries())
+        automation_health = collect_automation_health(
+            states, excluded, now, AVAILABILITY_GRACE_PERIOD
+        )
+        observations = build_observations(
+            unavailable, stale, integration_health["failed_entries"],
+            automation_health["unavailable_automations"]
+        )
         self._incident_history = reconcile_incidents(
             observations, self._incident_history, now.isoformat()
         )
@@ -213,10 +222,10 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             lambda: {"incidents": self._incident_history}, INCIDENT_SAVE_DELAY
         )
         active_incidents = [
-            incident
-            for incident in self._incident_history
+            incident for incident in self._incident_history
             if incident.get("status") == "active"
         ]
+        correlation_groups = correlate_incidents(active_incidents)
         eligible_count = sum(state.entity_id not in excluded for state in states)
         availability_assessed_count = sum(
             state.entity_id not in excluded and state.state != "unknown"
@@ -235,6 +244,10 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             freshness_enabled=freshness_enabled,
             selected_freshness_count=len(selected),
             freshness_monitoring_count=freshness_monitoring_count,
+            integration_eligible_count=integration_health["eligible_count"],
+            integration_assessed_count=integration_health["assessed_count"],
+            automation_eligible_count=automation_health["eligible_count"],
+            automation_assessed_count=automation_health["assessed_count"],
         )
         return {
             "last_scan": now,
@@ -260,6 +273,9 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             "availability_grace_seconds": int(
                 AVAILABILITY_GRACE_PERIOD.total_seconds()
             ),
+            "integration_health": integration_health,
+            "automation_health": automation_health,
+            "correlation_groups": correlation_groups,
             "active_incidents": active_incidents,
             "incident_history": self._incident_history,
             "health_score": score["score"],
