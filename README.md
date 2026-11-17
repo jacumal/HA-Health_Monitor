@@ -4,6 +4,8 @@
 
 HA Health Monitor is an open-source Home Assistant integration for local observability and diagnostics. It is designed to detect meaningful problems, explain evidence and help users troubleshoot without silently changing their installation.
 
+> **Requires Home Assistant 2024.11 or newer.**
+>
 > **Current status: early development (0.1.0).** The first installable foundation is available, but this is not a stable release and does not yet implement every planned monitoring engine or the Lovelace card.
 
 ## Current functionality (0.1.0)
