@@ -5,7 +5,6 @@ from __future__ import annotations
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.config_entries import OptionsFlowWithReload
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
@@ -46,7 +45,7 @@ class HAHealthMonitorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return HAHealthMonitorOptionsFlow()
 
 
-class HAHealthMonitorOptionsFlow(OptionsFlowWithReload):
+class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
     """Handle integration options."""
 
 
