@@ -6,7 +6,7 @@ Design baseline, not a claim that the whole product is complete.
 ## Freshness monitor — implemented flow and confirmed decisions
 
 - Only explicitly selected entities are eligible for observation, learning and stale detection. Globally excluded entities are also excluded from freshness.
-- The coordinator subscribes to Home Assistant state-change events for selected entity IDs only. It learns from each new state's last_reported timestamp, not from periodic polling.
+- The coordinator subscribes to both state_changed and state_reported for selected entity IDs only. Changed states use last_updated; unchanged reports use the state_reported event's last_reported timestamp. This captures same-value reports without listening globally or relying on periodic polling.
 - At startup, a new profile is seeded with the current last_reported timestamp. Startup itself is never counted as an interval.
 - Five valid intervals are required before the entity becomes monitorable. There is no fixed learning window.
 - Initial cadence is the median of the first five valid intervals. Thereafter, a bounded exponential moving average (alpha 0.2) adapts gradually; an individual interval is clamped to 0.5x–2x the current estimate.

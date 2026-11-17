@@ -7,7 +7,10 @@ from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
-from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.helpers.event import (
+    async_track_state_change_event,
+    async_track_state_report_event,
+)
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
@@ -48,6 +51,7 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
         )
         self.learner = FreshnessLearner()
         self._unsub_state_listener = None
+        self._unsub_state_report_listener = None
 
     @property
     def selected_freshness_entities(self) -> set[str]:
@@ -78,17 +82,36 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             self._unsub_state_listener = async_track_state_change_event(
                 self.hass, selected, self._async_handle_state_change
             )
+            self._unsub_state_report_listener = async_track_state_report_event(
+                self.hass, selected, self._async_handle_state_report
+            )
 
     @callback
     def _async_handle_state_change(self, event: Event) -> None:
-        """Learn only from real reports for explicitly selected entities."""
-        entity_id = event.data.get("entity_id")
+        """Learn from changed states using last_updated, not mutable last_reported."""
+        new_state = event.data.get("new_state")
+        if new_state is None:
+            return
+        self._async_observe_report(event.data.get("entity_id"), new_state, new_state.last_updated)
+
+    @callback
+    def _async_handle_state_report(self, event: Event) -> None:
+        """Learn from unchanged state reports using the event's timestamp."""
+        new_state = event.data.get("new_state")
+        if new_state is None:
+            return
+        self._async_observe_report(
+            event.data.get("entity_id"), new_state, event.data.get("last_reported")
+        )
+
+    @callback
+    def _async_observe_report(self, entity_id: str, new_state, reported_at) -> None:
+        """Record a report only for selected, available entities."""
         if entity_id not in self.selected_freshness_entities:
             return
-        new_state = event.data.get("new_state")
-        if new_state is None or new_state.state in ("unknown", "unavailable"):
+        if new_state.state in ("unknown", "unavailable") or reported_at is None:
             return
-        if self.learner.observe(entity_id, new_state.last_reported):
+        if self.learner.observe(entity_id, reported_at):
             self._store.async_delay_save(self.learner.export, FRESHNESS_SAVE_DELAY)
 
     async def async_reset_freshness_learning(
@@ -112,6 +135,9 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
         if self._unsub_state_listener is not None:
             self._unsub_state_listener()
             self._unsub_state_listener = None
+        if self._unsub_state_report_listener is not None:
+            self._unsub_state_report_listener()
+            self._unsub_state_report_listener = None
         await self._store.async_save(self.learner.export())
 
     async def _async_update_data(self) -> dict:

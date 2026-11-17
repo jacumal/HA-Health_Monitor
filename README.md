@@ -12,7 +12,7 @@ HA Health Monitor is an open-source Home Assistant integration for local observa
 
 - Graphical installation and options through Home Assistant.
 - Availability scan for entities in the `unavailable` state.
-- Adaptive freshness learning for explicitly selected entities, using state-change events and local statistics.
+- Adaptive freshness learning for explicitly selected entities, using filtered state-change and state-report events plus local statistics.
 - Per-entry persistence of cadence profiles using Home Assistant Store.
 - Per-entity learning/monitoring state, sample count, expected cadence and adaptive stale threshold in sensor attributes.
 - Manual service to reset one selected profile or all selected profiles.
@@ -23,7 +23,7 @@ HA Health Monitor is an open-source Home Assistant integration for local observa
 - Only explicitly selected entities are eligible for learning.
 - Each entity needs at least five valid update intervals. There is no fixed time window.
 - Startup seeds a timestamp but does not count as a sample.
-- Home Assistant state-change events feed the learner; periodic scans do not fabricate samples.
+- Filtered Home Assistant state-change and state-report events feed the learner, including reports where the value has not changed; periodic scans do not fabricate samples.
 - The expected cadence adapts gradually with bounded intervals.
 - Initial stale threshold: three times the learned expected interval. This default requires validation on real installations.
 - Profiles survive restarts and are discarded when entities are removed from the selected list.
