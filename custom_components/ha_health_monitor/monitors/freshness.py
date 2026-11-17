@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
 from collections.abc import Iterable
+from datetime import datetime, timedelta
 
 from homeassistant.core import State
 
@@ -15,7 +15,7 @@ def collect_stale(
     now: datetime,
     stale_after: timedelta,
 ) -> list[dict]:
-    """Return selected entities that have not reported a state update within the threshold."""
+    """Return selected entities that have not reported an update within the threshold."""
     stale = []
     for state in states:
         if (
