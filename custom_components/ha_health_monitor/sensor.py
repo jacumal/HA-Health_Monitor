@@ -81,6 +81,9 @@ class HealthMonitorSensor(CoordinatorEntity[HealthMonitorCoordinator], SensorEnt
                 "monitored_entity_count": self.coordinator.data[
                     "monitored_entity_count"
                 ],
+                "grace_period_seconds": self.coordinator.data[
+                    "availability_grace_seconds"
+                ],
             }
         if key == "stale_entities":
             return {
