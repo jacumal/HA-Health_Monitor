@@ -5,6 +5,7 @@ from __future__ import annotations
 import voluptuous as vol
 
 from homeassistant import config_entries
+from homeassistant.config_entries import OptionsFlowWithReload
 from homeassistant.core import callback
 from homeassistant.helpers import selector
 
@@ -42,14 +43,12 @@ class HAHealthMonitorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry):
         """Create the options flow."""
-        return HAHealthMonitorOptionsFlow(config_entry)
+        return HAHealthMonitorOptionsFlow()
 
 
-class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
+class HAHealthMonitorOptionsFlow(OptionsFlowWithReload):
     """Handle integration options."""
 
-    def __init__(self, config_entry):
-        self.config_entry = config_entry
 
     async def async_step_init(self, user_input=None):
         """Manage monitoring options."""
