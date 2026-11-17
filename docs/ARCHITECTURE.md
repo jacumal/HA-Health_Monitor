@@ -18,12 +18,16 @@ Frontend and backend are independently packaged. The card must gracefully report
 - Treat `unknown` separately from `unavailable`; suppress expected startup/transient states.
 - Support domain/entity exclusions and per-entity overrides.
 
-### Freshness
-- Learn or configure expected update cadence.
-- Detect deviations from an entity's normal/configured behavior; no single global timeout.
-- Avoid false positives for event-driven, static, battery-powered and intentionally quiet entities.
-- Initial baseline target: 24 hours, provisional and configurable.
-- Expose confidence/coverage; insufficient history must not be presented as healthy.
+### Freshness — confirmed product decisions
+- **Explicit opt-in selection:** only entities explicitly selected by the user are eligible for learning or freshness alerts. No automatic enrollment of all Home Assistant entities.
+- **Adaptive initial learning:** there is no fixed 24-hour/48-hour/7-day learning window. Each entity becomes monitorable when its own reporting history contains at least five valid intervals. A quiet or irregular entity may therefore take longer; it remains in a visible learning/insufficient-data state rather than being declared healthy or stale.
+- **Gradual adaptation:** after the initial profile is established, the expected interval is adjusted with a bounded exponential moving average (initial alpha 0.2). A single unusually long or short interval is bounded so it cannot abruptly redefine the profile.
+- **Manual reset:** users can explicitly reset one selected entity's profile or all profiles. Reset returns the affected entity to learning state; it does not delete Home Assistant history or change the entity.
+- **Local and deterministic:** cadence learning uses timestamps and local Python statistics. No external AI/LLM service is required.
+- **Threshold:** the initial adaptive threshold is three times the learned expected interval. This is an initial engineering rule to validate against real installations, not a universal guarantee.
+- **Coverage/confidence:** expose learning/monitoring state and sample count. Insufficient history must never be presented as healthy.
+- Ignore non-increasing timestamps and cap extreme single-interval influence. Excluded or unselected entities must never enter the learner.
+- Preserve a manual fixed-threshold mode only as a future explicit override; it must not silently mix with adaptive profiles.
 
 ### Integrations
 - Use supported config-entry, setup and diagnostic surfaces.
@@ -70,8 +74,9 @@ Proposed services:
 - `health_monitor.scan_now`
 - `health_monitor.dismiss_incident`
 - `health_monitor.reset_history`
+- `health_monitor.reset_freshness_learning` (target one selected entity or all learned profiles)
 
-Service schemas and destructive-action protections are implementation tasks. History reset requires explicit user action.
+Service schemas and destructive-action protections are implementation tasks. History and learning resets require explicit user action.
 
 ## 4. Persistence and update model
 - Use supported Home Assistant storage APIs for durable history.
@@ -80,6 +85,8 @@ Service schemas and destructive-action protections are implementation tasks. His
 - Separate scheduled scans, event-driven checks and manual scans.
 - Bound history and version the storage schema.
 - Never access `.storage` directly.
+- Persist freshness profiles (last observed report, valid interval sample count and learned expected interval) using Home Assistant's Store API; restore profiles on restart.
+- On configuration changes, stop learning entities that are no longer selected. Do not silently enroll newly selected entities into an existing profile; start their learning explicitly from observed reports.
 
 ## 5. Configuration experience
 Config Flow defaults should make first install useful without a long questionnaire. Options Flow exposes:
@@ -89,7 +96,7 @@ Config Flow defaults should make first install useful without a long questionnai
 - incident retention and notification preferences;
 - optional supported automation-monitor interoperability.
 
-Use Home Assistant selectors where available. YAML is never mandatory.
+Freshness configuration must provide a graphical entity selector, an explanation that only selected entities are learned, a visible per-entity learning state, and an explicit reset action. YAML is never mandatory.
 
 ## 6. Internationalization architecture
 International support is required from the first implementation, not deferred until release.

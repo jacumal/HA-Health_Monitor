@@ -14,17 +14,27 @@ HA Health Monitor is an open-source Home Assistant integration for local observa
 - Graphical options for scan interval and excluded entities.
 - Availability scan for entities in the `unavailable` state.
 - Optional freshness checks for explicitly selected entities only.
+- Initial adaptive freshness learning engine (statistical core and unit tests); coordinator event collection, persistence, reset service and end-to-end HA validation are still pending.
 - Sensors for unavailable entities, stale entities and last scan.
 - A problem binary sensor.
 - Manual scan service: `ha_health_monitor.scan_now`.
 - Local diagnostics with sensitive configuration keys redacted.
 - English and Spanish integration translations.
 
+### Freshness learning decisions
+
+- Only entities explicitly selected by the user are eligible for freshness learning.
+- Initial learning is data-driven, not tied to a fixed number of hours or days. An entity needs at least five valid reporting intervals before its profile is ready.
+- Once ready, the expected cadence adapts gradually; a single unusual interval cannot abruptly redefine the profile.
+- Users will be able to reset an individual profile or all profiles manually.
+- Learning is local, deterministic and does not require an external AI service.
+- The initial stale threshold is three times the learned expected interval; this needs validation with real installations.
+
 ### Deliberate limitations
 
 - `unknown` is not treated as `unavailable`.
 - Entity unavailability is not presented as proof that a physical device is offline.
-- Freshness monitoring is disabled by default. It uses Home Assistant's `last_reported` timestamp and only checks entities explicitly selected by the user. It is not yet an adaptive cadence learner.
+- Freshness monitoring is disabled by default. The adaptive learner core is implemented, but is not yet connected to Home Assistant event collection or persistent storage; adaptive freshness alerts are therefore not yet available end-to-end.
 - Integration setup failures, automation traces, incident correlation, durable incident history and the explainable 0–100 score are not implemented yet.
 - The custom Lovelace card is a separate planned package and is not included in this first backend milestone.
 
@@ -49,7 +59,7 @@ The initial setup has no required fields. After adding the integration, open its
 - Entities to exclude.
 - Optional freshness monitoring.
 - Entities to check for stale updates.
-- Maximum allowed time without a state update (5–1440 minutes; default 60).
+- Maximum allowed time without a state update (5–1440 minutes; default 60; fixed-threshold path pending replacement by the adaptive coordinator).
 
 Only select entities that are expected to update regularly. Static, event-driven and battery-powered entities can otherwise produce false positives.
 
