@@ -12,7 +12,6 @@ from custom_components.ha_health_monitor.const import (
     CONF_MONITOR_FRESHNESS,
     DOMAIN,
 )
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ha_health_monitor.coordinator import HealthMonitorCoordinator
 
