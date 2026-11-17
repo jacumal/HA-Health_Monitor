@@ -1,0 +1,45 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurar HA Health Monitor",
+        "description": "Añade la integración. La monitorización comienza con ajustes predeterminados seguros."
+      }
+    },
+    "abort": {
+      "already_configured": "HA Health Monitor ya está configurado."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Ajustes de monitorización",
+        "description": "Elige qué monitorizar. La detección de sensores sin actualizar es opcional y solo se aplica a las entidades seleccionadas.",
+        "data": {
+          "scan_interval_minutes": "Intervalo de análisis",
+          "excluded_entities": "Entidades excluidas",
+          "monitor_freshness": "Activar monitorización de actualizaciones",
+          "freshness_entities": "Entidades en las que detectar falta de actualizaciones",
+          "freshness_threshold_minutes": "Tiempo máximo sin actualización"
+        },
+        "data_description": {
+          "scan_interval_minutes": "Frecuencia con la que se revisan los estados de Home Assistant.",
+          "excluded_entities": "Estas entidades se excluyen de los controles de disponibilidad y actualización.",
+          "monitor_freshness": "Desactivado por defecto para evitar falsos positivos en entidades que solo cambian cuando varía su valor.",
+          "freshness_entities": "Selecciona únicamente entidades que deberían actualizarse regularmente.",
+          "freshness_threshold_minutes": "Se genera una incidencia cuando una entidad seleccionada no cambia durante más tiempo del indicado."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "unavailable_entities": { "name": "Entidades no disponibles" },
+      "stale_entities": { "name": "Entidades sin actualizar" },
+      "last_scan": { "name": "Último análisis" }
+    },
+    "binary_sensor": {
+      "system_healthy": { "name": "El sistema presenta problemas" }
+    }
+  }
+}
