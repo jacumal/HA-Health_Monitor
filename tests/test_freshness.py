@@ -6,11 +6,11 @@ from types import SimpleNamespace
 from custom_components.ha_health_monitor.monitors.freshness import collect_stale
 
 
-def make_state(entity_id, state, last_updated, name="Test entity"):
+def make_state(entity_id, state, last_reported, name="Test entity"):
     return SimpleNamespace(
         entity_id=entity_id,
         state=state,
-        last_updated=last_updated,
+        last_reported=last_reported,
         name=name,
     )
 
