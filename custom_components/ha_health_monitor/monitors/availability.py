@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
 from collections.abc import Iterable
+from datetime import datetime, timedelta
 
 from homeassistant.core import State
 
