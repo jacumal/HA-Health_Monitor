@@ -92,7 +92,9 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
         new_state = event.data.get("new_state")
         if new_state is None:
             return
-        self._async_observe_report(event.data.get("entity_id"), new_state, new_state.last_updated)
+        self._async_observe_report(
+            event.data.get("entity_id"), new_state, new_state.last_updated
+        )
 
     @callback
     def _async_handle_state_report(self, event: Event) -> None:
