@@ -5,7 +5,6 @@ from __future__ import annotations
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers import selector
-import voluptuous as vol
 
 from .const import (
     CONF_EXCLUDED_ENTITIES,
