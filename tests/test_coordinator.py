@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 from homeassistant.core import Event
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ha_health_monitor.const import (
     CONF_EXCLUDED_ENTITIES,
