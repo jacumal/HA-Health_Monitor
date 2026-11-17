@@ -40,6 +40,11 @@ class HealthSystemHealthySensor(
         self._attr_unique_id = f"{entry.entry_id}_system_healthy"
 
     @property
+    def suggested_object_id(self) -> str:
+        """Return a stable, language-independent entity ID suffix."""
+        return "ha_health_monitor_system_has_issues"
+
+    @property
     def is_on(self) -> bool:
         """Return true when an issue observation exists."""
         return bool(self.coordinator.get_issue_count())
