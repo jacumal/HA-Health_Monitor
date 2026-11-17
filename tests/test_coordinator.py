@@ -11,8 +11,9 @@ from custom_components.ha_health_monitor.const import (
     CONF_MONITOR_FRESHNESS,
     DOMAIN,
 )
-from custom_components.ha_health_monitor.coordinator import HealthMonitorCoordinator
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.ha_health_monitor.coordinator import HealthMonitorCoordinator
 
 
 async def test_freshness_selection_respects_exclusions(hass):
