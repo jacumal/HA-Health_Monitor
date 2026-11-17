@@ -6,7 +6,7 @@ from typing import Any
 CATEGORY_WEIGHTS = {"availability": 30, "freshness": 20, "integrations": 25, "automations": 25}
 
 def _coverage(eligible: int, assessed: int) -> float:
-    return min(max(assessed, 0) / eligible, 1.0) if eligible > 0 else 0.0
+    return min(max(assessed, 0) / eligible, 1.0) if eligible > 0 else 1.0
 
 def calculate_health_score(active_incidents: list[dict[str, Any]], *,
     availability_eligible_count: int, availability_assessed_count: int,
