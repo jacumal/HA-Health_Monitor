@@ -22,7 +22,7 @@ HA Health Monitor is an open-source Home Assistant integration for local observa
 
 - `unknown` is not treated as `unavailable`.
 - Entity unavailability is not presented as proof that a physical device is offline.
-- Freshness monitoring is disabled by default. It uses `last_updated` and only checks entities explicitly selected by the user. It is not yet an adaptive cadence learner.
+- Freshness monitoring is disabled by default. It uses Home Assistant's `last_reported` timestamp and only checks entities explicitly selected by the user. It is not yet an adaptive cadence learner.
 - Integration setup failures, automation traces, incident correlation, durable incident history and the explainable 0–100 score are not implemented yet.
 - The custom Lovelace card is a separate planned package and is not included in this first backend milestone.
 
