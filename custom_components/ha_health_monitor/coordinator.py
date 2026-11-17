@@ -29,8 +29,8 @@ from .const import (
 )
 from .incident_engine import build_observations, correlate_incidents, reconcile_incidents
 from .monitors.availability import collect_unavailable
-from .monitors.integrations import collect_integration_health
 from .monitors.automations import collect_automation_health
+from .monitors.integrations import collect_integration_health
 from .monitors.freshness import FreshnessLearner, collect_adaptive_stale
 from .scoring import calculate_health_score
 
@@ -207,13 +207,17 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
                 f"Unable to inspect Home Assistant states: {err}"
             ) from err
 
-        integration_health = collect_integration_health(self.hass.config_entries.async_entries())
+        integration_health = collect_integration_health(
+            self.hass.config_entries.async_entries()
+        )
         automation_health = collect_automation_health(
             states, excluded, now, AVAILABILITY_GRACE_PERIOD
         )
         observations = build_observations(
-            unavailable, stale, integration_health["failed_entries"],
-            automation_health["unavailable_automations"]
+            unavailable,
+            stale,
+            integration_health["failed_entries"],
+            automation_health["unavailable_automations"],
         )
         self._incident_history = reconcile_incidents(
             observations, self._incident_history, now.isoformat()
