@@ -21,8 +21,11 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
+from .monitors.availability import collect_unavailable
+from .monitors.freshness import collect_stale
 
 _LOGGER = logging.getLogger(__name__)
+AVAILABILITY_GRACE_PERIOD = timedelta(minutes=2)
 
 
 class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
@@ -43,9 +46,6 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
         """Build a point-in-time snapshot from Home Assistant's state machine."""
         now = dt_util.utcnow()
         excluded = set(self.options.get(CONF_EXCLUDED_ENTITIES, []))
-        unavailable: list[dict] = []
-        stale: list[dict] = []
-
         monitor_freshness = self.options.get(
             CONF_MONITOR_FRESHNESS, DEFAULT_MONITOR_FRESHNESS
         )
@@ -55,54 +55,39 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
                 CONF_FRESHNESS_THRESHOLD, DEFAULT_FRESHNESS_THRESHOLD
             )
         )
-        stale_after = timedelta(minutes=threshold)
+        states = self.hass.states.async_all()
 
         try:
-            for state in self.hass.states.async_all():
-                entity_id = state.entity_id
-                if entity_id in excluded:
-                    continue
-
-                if state.state == "unavailable":
-                    unavailable.append(
-                        {
-                            "entity_id": entity_id,
-                            "name": state.name,
-                            "last_changed": state.last_changed.isoformat(),
-                        }
-                    )
-                    continue
-
-                # Freshness is opt-in and only applies to entities explicitly selected
-                # by the user. A global timeout would create false positives for
-                # event-driven and battery-powered entities.
-                if (
-                    monitor_freshness
-                    and entity_id in freshness_entities
-                    and state.state not in ("unknown", "unavailable")
-                ):
-                    age = now - state.last_updated
-                    if age > stale_after:
-                        stale.append(
-                            {
-                                "entity_id": entity_id,
-                                "name": state.name,
-                                "last_updated": state.last_updated.isoformat(),
-                                "age_seconds": int(age.total_seconds()),
-                                "threshold_seconds": int(stale_after.total_seconds()),
-                            }
-                        )
-        except Exception as err:  # Defensive boundary around HA state snapshot.
+            unavailable = collect_unavailable(
+                states, excluded, now, AVAILABILITY_GRACE_PERIOD
+            )
+            stale = (
+                collect_stale(
+                    states,
+                    freshness_entities,
+                    excluded,
+                    now,
+                    timedelta(minutes=threshold),
+                )
+                if monitor_freshness
+                else []
+            )
+        except (AttributeError, TypeError, ValueError) as err:
             raise UpdateFailed(f"Unable to inspect Home Assistant states: {err}") from err
 
         return {
             "last_scan": now,
             "unavailable_entities": unavailable,
             "stale_entities": stale,
-            "monitored_entity_count": len(self.hass.states.async_all()) - len(excluded),
+            "monitored_entity_count": sum(
+                state.entity_id not in excluded for state in states
+            ),
             "freshness_enabled": bool(monitor_freshness),
             "freshness_entity_count": len(freshness_entities),
             "freshness_threshold_minutes": threshold,
+            "availability_grace_seconds": int(
+                AVAILABILITY_GRACE_PERIOD.total_seconds()
+            ),
         }
 
     @callback
