@@ -4,52 +4,65 @@
 
 HA Health Monitor is an open-source Home Assistant integration for local observability and diagnostics. It detects meaningful problems, explains evidence and helps users troubleshoot without silently changing their installation.
 
-> **Requires Home Assistant 2024.11 or newer.**
+> Requires Home Assistant 2024.11 or newer.
 >
-> **Current status: early development (0.1.0).** This is not a stable release and does not yet implement every planned monitoring engine or the Lovelace card.
+> Current status: early development (0.1.0). Availability and adaptive freshness are connected to a persistent incident lifecycle and a coverage-aware score. Other monitoring engines and the Lovelace card remain in development.
 
-## Current functionality
+## Implemented backend foundation
 
 - Graphical installation and options through Home Assistant.
-- Availability scan for entities in the `unavailable` state.
-- Adaptive freshness learning for explicitly selected entities, using filtered state-change and state-report events plus local statistics.
-- Per-entry persistence of cadence profiles using Home Assistant Store.
-- Per-entity learning/monitoring state, sample count, expected cadence and adaptive stale threshold in sensor attributes.
-- Manual service to reset one selected profile or all selected profiles.
+- Availability scan for entities in the unavailable state, with a two-minute grace period.
+- Adaptive freshness learning for explicitly selected entities, using filtered state-change and state-report events.
+- Per-entity profiles persisted locally with Home Assistant Store.
+- Five valid intervals before an entity becomes eligible for stale detection.
+- Robust initial learning with median intervals and rejection of extreme outliers.
+- Gradual cadence adaptation using a bounded exponential moving average.
+- Per-entity learning/monitoring state, sample count, expected cadence and stale threshold.
+- Manual reset of one profile or all selected profiles.
+- Deterministic incident IDs, active/resolved lifecycle and bounded history.
+- Preliminary explainable health score with per-category breakdown, rule-linked deductions and explicit coverage.
 - English and Spanish integration translations.
 
-## Freshness learning
+## Freshness behavior
 
-- Only explicitly selected entities are eligible for learning.
-- Each entity needs at least five valid update intervals. There is no fixed time window.
-- Startup seeds a timestamp but does not count as a sample.
-- Filtered Home Assistant state-change and state-report events feed the learner, including reports where the value has not changed; periodic scans do not fabricate samples.
-- The expected cadence adapts gradually with bounded intervals.
-- Initial stale threshold: three times the learned expected interval. This default requires validation on real installations.
-- Profiles survive restarts and are discarded when entities are removed from the selected list.
+- Only entities explicitly selected by the user are observed.
+- Changed values and same-value reports are both captured using Home Assistant's filtered state events.
+- Startup seeds a baseline but never counts as a reporting interval.
+- Each entity needs five valid intervals. There is no fixed learning window.
+- Initial cadence is the median of the first five intervals.
+- Extreme intervals are ignored as cadence samples so temporary outages do not poison learning.
+- Once ready, cadence adapts gradually; individual intervals are bounded to reduce outlier influence.
+- Initial stale threshold: three times the learned cadence. This is an engineering default that still requires validation against real installations.
+- Profiles survive restarts and are pruned when entities are removed from the selected list.
 - Learning is local and deterministic; no external AI service is required.
-- Reset with `ha_health_monitor.reset_freshness_learning`; provide `entity_id` for one selected entity or omit it for all selected profiles.
 
-## Known limitations
+## Score and incidents
 
-- Freshness monitoring is disabled by default.
-- `unknown` is not treated as `unavailable`.
-- Entity unavailability does not prove that a physical device is offline.
-- Automated tests have been added, but CI execution and real HA OS validation are still pending.
-- Integration setup failures, automation traces, incident correlation, durable incident history, explainable 0–100 score and the companion Lovelace card are not implemented yet.
+The coordinator converts monitor findings into stable issue IDs and maintains active/resolved incident history. The score includes category-level possible/earned points, deductions linked to issue IDs and a coverage percentage.
+
+The score is deliberately marked partial while integration monitoring, automation monitoring and incident intelligence are not fully implemented. A score of 100 with partial coverage does not certify the whole installation as healthy. Candidate weights and deduction sizes are provisional until validated on real installations.
+
+## Current limitations
+
+- Freshness monitoring is disabled by default and must be explicitly configured.
+- Static or irregularly reporting entities are not suitable for cadence learning.
+- Integration and automation monitors are not implemented yet.
+- Incident correlation, acknowledgements and guided remediation are not complete.
+- The companion Hybrid Lovelace card is a separate planned package.
+- CI and real HA OS validation must pass before a stable release.
 
 ## Installation (development)
 
-1. Copy `custom_components/ha_health_monitor` into `config/custom_components/`.
+1. Copy custom_components/ha_health_monitor into config/custom_components/.
 2. Restart Home Assistant.
-3. Go to **Settings → Devices & services → Add integration**.
-4. Search for **HA Health Monitor**.
+3. Go to Settings → Devices & services → Add integration.
+4. Search for HA Health Monitor.
 
 HACS distribution is not yet a validated stable release.
 
 ## Configuration
 
-Open the integration's **Configure** options:
+Open the integration's Configure options:
 - Scan interval (1–60 minutes; default 5).
 - Entities to exclude.
 - Enable adaptive freshness monitoring.
@@ -59,17 +72,19 @@ Only select entities expected to report regularly. Static, event-driven and batt
 
 ## Entities
 
-- `sensor.ha_health_monitor_unavailable_entities`
-- `sensor.ha_health_monitor_stale_entities`
-- `sensor.ha_health_monitor_last_scan`
-- `binary_sensor.ha_health_monitor_system_has_issues`
+- sensor.ha_health_monitor_health_score
+- sensor.ha_health_monitor_active_incidents
+- sensor.ha_health_monitor_unavailable_entities
+- sensor.ha_health_monitor_stale_entities
+- sensor.ha_health_monitor_last_scan
+- binary_sensor.ha_health_monitor_system_has_issues
 
-The stale entities sensor exposes selected profiles, learning state, sample count and expected cadence.
+The score sensor exposes coverage, status, category breakdown and traceable deductions. The incidents sensor exposes active incidents. The stale sensor exposes per-entity learning status and cadence.
 
 ## Services
 
-- `ha_health_monitor.scan_now`: run an immediate scan.
-- `ha_health_monitor.reset_freshness_learning`: reset one selected entity (optional `entity_id`) or all selected profiles.
+- ha_health_monitor.scan_now: run an immediate scan.
+- ha_health_monitor.reset_freshness_learning: reset one selected entity (optional entity_id) or all selected profiles.
 
 ## Privacy
 
@@ -79,8 +94,8 @@ All monitoring runs locally inside Home Assistant. No entity states or diagnosti
 
 Real diagnostic usefulness, a polished interface, graphical configuration, an original Hybrid Lovelace card, and internationalization from the beginning (English and Spanish initially).
 
-See [Product pillars](docs/PRODUCT_PILLARS.md), [Architecture](docs/ARCHITECTURE.md), [UI prototype](docs/UI_PROTOTYPE.md) and [Roadmap](docs/ROADMAP.md).
+See docs/PRODUCT_PILLARS.md, docs/ARCHITECTURE.md, docs/UI_PROTOTYPE.md and docs/ROADMAP.md.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See LICENSE.

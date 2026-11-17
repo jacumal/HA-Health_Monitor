@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers import selector
@@ -35,19 +36,23 @@ class HAHealthMonitorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
-        """Create the options flow."""
-        return HAHealthMonitorOptionsFlow()
+        """Create an options flow bound to its config entry."""
+        return HAHealthMonitorOptionsFlow(config_entry)
 
 
 class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
     """Handle integration options."""
+
+    def __init__(self, config_entry) -> None:
+        """Keep the config entry reference for HA 2024.11 compatibility."""
+        self._config_entry = config_entry
 
     async def async_step_init(self, user_input=None):
         """Manage monitoring options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        options = self.config_entry.options
+        options = self._config_entry.options
         schema = vol.Schema(
             {
                 vol.Optional(

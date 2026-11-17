@@ -15,24 +15,21 @@ async def async_get_config_entry_diagnostics(
 ) -> dict:
     """Return redacted, local diagnostic information."""
     coordinator = entry.runtime_data
+    data = coordinator.data or {}
     return {
         "entry": async_redact_data(dict(entry.data), TO_REDACT),
         "options": async_redact_data(dict(entry.options), TO_REDACT),
         "monitoring": {
             "last_scan": (
-                coordinator.data["last_scan"].isoformat()
-                if coordinator.data
-                else None
+                data["last_scan"].isoformat() if data.get("last_scan") else None
             ),
-            "unavailable_count": (
-                len(coordinator.data["unavailable_entities"])
-                if coordinator.data
-                else None
-            ),
-            "stale_count": (
-                len(coordinator.data["stale_entities"])
-                if coordinator.data
-                else None
-            ),
+            "unavailable_count": len(data.get("unavailable_entities", [])),
+            "stale_count": len(data.get("stale_entities", [])),
+            "active_incident_count": len(data.get("active_incidents", [])),
+            "health_score": data.get("health_score"),
+            "health_status": data.get("health_status"),
+            "coverage_percent": data.get("health_coverage_percent"),
+            "freshness_enabled": data.get("freshness_enabled", False),
+            "freshness_profile_count": len(data.get("freshness_profiles", {})),
         },
     }

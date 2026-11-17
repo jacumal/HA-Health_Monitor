@@ -45,6 +45,12 @@ class HealthSystemHealthySensor(
         return "ha_health_monitor_system_has_issues"
 
     @property
-    def is_on(self) -> bool:
-        """Return true when an issue observation exists."""
-        return bool(self.coordinator.get_issue_count())
+    def is_on(self) -> bool | None:
+        """Avoid reporting healthy when assessment coverage is insufficient."""
+        if self.coordinator.data is None:
+            return None
+        if self.coordinator.get_issue_count():
+            return True
+        if self.coordinator.data["health_status"] in ("partial", "not_assessed"):
+            return None
+        return False

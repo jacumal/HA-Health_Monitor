@@ -10,6 +10,8 @@ from homeassistant.core import State
 
 MAX_INTERVAL_SECONDS = 30 * 24 * 60 * 60
 MIN_INTERVAL_SAMPLES = 5
+MAX_INTERVAL_SAMPLES = 21
+OUTLIER_FACTOR = 6.0
 ADAPTATION_ALPHA = 0.2
 STALE_MULTIPLIER = 3.0
 
@@ -18,7 +20,54 @@ class FreshnessLearner:
     """Learn expected reporting cadence for explicitly selected entities."""
 
     def __init__(self, data: dict | None = None) -> None:
-        self._entities: dict[str, dict] = (data or {}).get("entities", {})
+        raw = data.get("entities", {}) if isinstance(data, dict) else {}
+        self._entities: dict[str, dict] = {}
+        if isinstance(raw, dict):
+            for entity_id, profile in raw.items():
+                if not isinstance(entity_id, str) or not isinstance(profile, dict):
+                    continue
+                self._entities[entity_id] = self._normalize_profile(profile)
+
+    @staticmethod
+    def _normalize_profile(profile: dict) -> dict:
+        """Validate and normalize persisted profile data."""
+        last_reported = profile.get("last_reported")
+        if not isinstance(last_reported, str):
+            last_reported = None
+        try:
+            if last_reported is not None:
+                parsed = datetime.fromisoformat(last_reported)
+                if parsed.tzinfo is None:
+                    last_reported = None
+        except ValueError:
+            last_reported = None
+
+        intervals = profile.get("intervals", [])
+        if not isinstance(intervals, list):
+            intervals = []
+        valid_intervals = [
+            float(value)
+            for value in intervals
+            if isinstance(value, (int, float))
+            and 0 < value <= MAX_INTERVAL_SECONDS
+        ][-MAX_INTERVAL_SAMPLES:]
+        expected = profile.get("expected_interval")
+        if (
+            not isinstance(expected, (int, float))
+            or not 0 < expected <= MAX_INTERVAL_SECONDS
+        ):
+            expected = None
+        count = profile.get("sample_count", len(valid_intervals))
+        if not isinstance(count, int) or count < 0:
+            count = len(valid_intervals)
+        if expected is None and len(valid_intervals) >= MIN_INTERVAL_SAMPLES:
+            expected = float(median(valid_intervals))
+        return {
+            "last_reported": last_reported,
+            "intervals": valid_intervals,
+            "expected_interval": float(expected) if expected is not None else None,
+            "sample_count": count,
+        }
 
     def has_profile(self, entity_id: str) -> bool:
         """Return whether any learning state exists for an entity."""
@@ -37,7 +86,7 @@ class FreshnessLearner:
         return True
 
     def observe(self, entity_id: str, reported_at: datetime) -> bool:
-        """Record a real report timestamp and update the learned cadence."""
+        """Record a real report and update the learned cadence."""
         if reported_at.tzinfo is None:
             return False
         record = self._entities.setdefault(
@@ -50,34 +99,60 @@ class FreshnessLearner:
             },
         )
         previous = record.get("last_reported")
-        if previous is not None:
+        if previous is None:
+            record["last_reported"] = reported_at.isoformat()
+            return True
+        try:
             previous_at = datetime.fromisoformat(previous)
-            interval = (reported_at - previous_at).total_seconds()
-            if interval <= 0:
-                return False
-            if interval > MAX_INTERVAL_SECONDS:
+        except (TypeError, ValueError):
+            record["last_reported"] = reported_at.isoformat()
+            return True
+        if previous_at.tzinfo is None:
+            record["last_reported"] = reported_at.isoformat()
+            return True
+
+        interval = (reported_at - previous_at).total_seconds()
+        if interval <= 0:
+            return False
+        if interval > MAX_INTERVAL_SECONDS:
+            record["last_reported"] = reported_at.isoformat()
+            return True
+
+        expected = record.get("expected_interval")
+        samples = record.setdefault("intervals", [])
+        if expected is None:
+            # Reject extreme gaps during initial learning so a temporary outage
+            # cannot poison the first cadence estimate.
+            if len(samples) >= 3:
+                center = median(samples)
+                if (
+                    interval > center * OUTLIER_FACTOR
+                    or interval < center / OUTLIER_FACTOR
+                ):
+                    record["last_reported"] = reported_at.isoformat()
+                    return True
+            samples.append(interval)
+            del samples[:-MAX_INTERVAL_SAMPLES]
+            record["sample_count"] = len(samples)
+            if len(samples) >= MIN_INTERVAL_SAMPLES:
+                record["expected_interval"] = float(median(samples))
+        else:
+            if (
+                interval > expected * OUTLIER_FACTOR
+                or interval < expected / OUTLIER_FACTOR
+            ):
                 record["last_reported"] = reported_at.isoformat()
                 return True
+            bounded = min(max(interval, expected * 0.5), expected * 2.0)
+            record["expected_interval"] = (
+                expected * (1 - ADAPTATION_ALPHA) + bounded * ADAPTATION_ALPHA
+            )
+            samples.append(interval)
+            del samples[:-MAX_INTERVAL_SAMPLES]
+            record["sample_count"] = min(
+                int(record.get("sample_count", MIN_INTERVAL_SAMPLES)) + 1, 10000
+            )
 
-            expected = record.get("expected_interval")
-            samples = record.setdefault("intervals", [])
-            if expected is None:
-                samples.append(interval)
-                if len(samples) > MIN_INTERVAL_SAMPLES:
-                    del samples[:-MIN_INTERVAL_SAMPLES]
-                record["sample_count"] = len(samples)
-                if len(samples) >= MIN_INTERVAL_SAMPLES:
-                    record["expected_interval"] = float(median(samples))
-            else:
-                bounded = min(max(interval, expected * 0.5), expected * 2.0)
-                record["expected_interval"] = (
-                    expected * (1 - ADAPTATION_ALPHA)
-                    + bounded * ADAPTATION_ALPHA
-                )
-                record["sample_count"] = min(
-                    int(record.get("sample_count", MIN_INTERVAL_SAMPLES)) + 1,
-                    10000,
-                )
         record["last_reported"] = reported_at.isoformat()
         return True
 
@@ -117,16 +192,16 @@ class FreshnessLearner:
         return changed
 
     def export(self) -> dict:
-        """Return JSON-serializable data for HA Store."""
+        """Return JSON-serializable data suitable for HA Store."""
         return {"entities": self._entities}
 
     @classmethod
     def from_storage(cls, data: dict | None) -> FreshnessLearner:
-        """Restore learner from stored representation."""
-        return cls(data if isinstance(data, dict) else None)
+        """Restore a learner from stored representation."""
+        return cls(data)
 
     def status(self, entity_id: str) -> str:
-        """Return lifecycle state identifier."""
+        """Return the user-facing lifecycle state identifier."""
         return "monitoring" if self.is_ready(entity_id) else "learning"
 
 
@@ -161,11 +236,13 @@ def collect_adaptive_stale(
             continue
         age = now - state.last_reported
         if age > threshold:
-            stale.append({
-                "entity_id": entity_id,
-                "name": state.name,
-                "last_reported": state.last_reported.isoformat(),
-                "age_seconds": int(age.total_seconds()),
-                "threshold_seconds": int(threshold.total_seconds()),
-            })
+            stale.append(
+                {
+                    "entity_id": entity_id,
+                    "name": state.name,
+                    "last_reported": state.last_reported.isoformat(),
+                    "age_seconds": int(age.total_seconds()),
+                    "threshold_seconds": int(threshold.total_seconds()),
+                }
+            )
     return stale, profiles

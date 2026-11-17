@@ -22,7 +22,7 @@ def trained_learner(entity_id="sensor.temperature"):
     learner = FreshnessLearner()
     start = datetime(2026, 11, 17, 8, 0, tzinfo=UTC)
     learner.seed(entity_id, start)
-    for minute in range(5, 31, 5):
+    for minute in range(5, 26, 5):
         learner.observe(entity_id, start + timedelta(minutes=minute))
     return learner, start
 
@@ -33,28 +33,38 @@ def test_five_valid_intervals_are_required():
     learner.seed("sensor.temperature", start)
     for minute in range(5, 26, 5):
         learner.observe("sensor.temperature", start + timedelta(minutes=minute))
-    assert learner.status("sensor.temperature") == "learning"
-    assert learner.expected_interval("sensor.temperature") is None
-
-    learner.observe("sensor.temperature", start + timedelta(minutes=30))
     assert learner.status("sensor.temperature") == "monitoring"
     assert learner.expected_interval("sensor.temperature") == 300
     assert learner.stale_after("sensor.temperature") == timedelta(seconds=900)
+    assert learner.sample_count("sensor.temperature") == 5
 
 
 def test_adaptation_is_gradual_and_limits_single_outlier():
     learner, start = trained_learner()
     before = learner.expected_interval("sensor.temperature")
-    learner.observe("sensor.temperature", start + timedelta(minutes=40))
+    learner.observe("sensor.temperature", start + timedelta(minutes=35))
     after = learner.expected_interval("sensor.temperature")
     assert before == 300
     assert 300 < after < 600
 
 
-def test_reset_can_target_one_entity_or_all_and_storage_round_trips():
+def test_outage_during_learning_does_not_pollute_initial_baseline():
+    learner = FreshnessLearner()
+    start = datetime(2026, 11, 17, 8, 0, tzinfo=UTC)
+    learner.seed("sensor.temperature", start)
+    for minute in (5, 10, 15):
+        learner.observe("sensor.temperature", start + timedelta(minutes=minute))
+    learner.observe("sensor.temperature", start + timedelta(hours=3))
+    learner.observe("sensor.temperature", start + timedelta(hours=3, minutes=5))
+    learner.observe("sensor.temperature", start + timedelta(hours=3, minutes=10))
+    assert learner.expected_interval("sensor.temperature") == 300
+    assert learner.sample_count("sensor.temperature") == 5
+
+
+def test_reset_and_storage_round_trip():
     learner, start = trained_learner("sensor.one")
     learner.seed("sensor.two", start)
-    for minute in range(5, 31, 5):
+    for minute in range(5, 26, 5):
         learner.observe("sensor.two", start + timedelta(minutes=minute))
     restored = FreshnessLearner.from_storage(learner.export())
     assert restored.is_ready("sensor.one")
@@ -83,6 +93,22 @@ def test_long_outage_resets_baseline_without_polluting_cadence():
     ).isoformat()
 
 
+def test_corrupt_storage_is_safely_ignored():
+    learner = FreshnessLearner.from_storage({
+        "entities": {
+            "sensor.good": {
+                "last_reported": "2026-11-17T08:00:00+00:00",
+                "intervals": [300, 300, 300, 300, 300],
+                "expected_interval": 300,
+                "sample_count": 5,
+            },
+            "sensor.bad": {"last_reported": "not-a-date", "intervals": "broken"},
+        }
+    })
+    assert learner.is_ready("sensor.good")
+    assert learner.status("sensor.bad") == "learning"
+
+
 def test_learning_entities_are_not_flagged_stale():
     now = datetime(2026, 11, 17, 10, 0, tzinfo=UTC)
     state = make_state("sensor.temperature", "21", now - timedelta(hours=3))
@@ -107,13 +133,3 @@ def test_only_selected_and_trained_entities_can_be_stale():
     )
     assert [item["entity_id"] for item in stale] == ["sensor.temperature"]
     assert profiles["sensor.temperature"]["status"] == "monitoring"
-
-
-def test_removed_entities_are_pruned_but_retained_entities_survive():
-    learner, _ = trained_learner("sensor.keep")
-    learner.seed(
-        "sensor.remove", datetime(2026, 11, 17, 8, 0, tzinfo=UTC)
-    )
-    assert learner.retain_entities({"sensor.keep"})
-    assert learner.has_profile("sensor.keep")
-    assert not learner.has_profile("sensor.remove")

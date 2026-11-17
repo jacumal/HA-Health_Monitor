@@ -1,4 +1,4 @@
-"""Coordinator and event-driven monitoring."""
+"""Coordinator joining monitors, incident lifecycle and explainable score."""
 
 from __future__ import annotations
 
@@ -24,17 +24,21 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
+from .incident_engine import build_observations, reconcile_incidents
 from .monitors.availability import collect_unavailable
 from .monitors.freshness import FreshnessLearner, collect_adaptive_stale
+from .scoring import calculate_health_score
 
 _LOGGER = logging.getLogger(__name__)
 AVAILABILITY_GRACE_PERIOD = timedelta(minutes=2)
 FRESHNESS_STORAGE_VERSION = 1
+INCIDENT_STORAGE_VERSION = 1
 FRESHNESS_SAVE_DELAY = 5
+INCIDENT_SAVE_DELAY = 5
 
 
 class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
-    """Collect supported state-based health observations."""
+    """Collect observations and publish one consistent health snapshot."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.entry = entry
@@ -46,37 +50,56 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             name=DOMAIN,
             update_interval=timedelta(minutes=interval),
         )
-        self._store = Store(
-            hass, FRESHNESS_STORAGE_VERSION, f"{DOMAIN}_{entry.entry_id}_freshness"
+        self._freshness_store = Store(
+            hass,
+            FRESHNESS_STORAGE_VERSION,
+            f"{DOMAIN}_{entry.entry_id}_freshness",
+        )
+        self._incident_store = Store(
+            hass,
+            INCIDENT_STORAGE_VERSION,
+            f"{DOMAIN}_{entry.entry_id}_incidents",
         )
         self.learner = FreshnessLearner()
+        self._incident_history: list[dict] = []
         self._unsub_state_listener = None
         self._unsub_state_report_listener = None
 
     @property
-    def selected_freshness_entities(self) -> set[str]:
-        """Return selected, non-excluded entities while freshness is enabled."""
-        if not self.options.get(CONF_MONITOR_FRESHNESS, DEFAULT_MONITOR_FRESHNESS):
-            return set()
+    def configured_freshness_entities(self) -> set[str]:
+        """Return selected entities after applying global exclusions."""
         selected = set(self.options.get(CONF_FRESHNESS_ENTITIES, []))
         excluded = set(self.options.get(CONF_EXCLUDED_ENTITIES, []))
         return selected - excluded
 
-    async def async_initialize(self) -> None:
-        """Restore profiles, reconcile selection and subscribe to selected entities."""
-        stored = await self._store.async_load()
-        self.learner = FreshnessLearner.from_storage(stored)
-        selected = self.selected_freshness_entities
-        enabled = self.options.get(CONF_MONITOR_FRESHNESS, DEFAULT_MONITOR_FRESHNESS)
-        changed = self.learner.retain_entities(selected) if enabled else False
+    @property
+    def selected_freshness_entities(self) -> set[str]:
+        """Return selected entities only while freshness monitoring is enabled."""
+        if not self.options.get(CONF_MONITOR_FRESHNESS, DEFAULT_MONITOR_FRESHNESS):
+            return set()
+        return self.configured_freshness_entities
 
-        # Seed new profiles without counting startup as an update interval.
+    async def async_initialize(self) -> None:
+        """Restore persistent state, reconcile selection and subscribe to events."""
+        freshness_data = await self._freshness_store.async_load()
+        incident_data = await self._incident_store.async_load()
+        self.learner = FreshnessLearner.from_storage(freshness_data)
+        self._incident_history = (
+            incident_data.get("incidents", [])
+            if isinstance(incident_data, dict)
+            and isinstance(incident_data.get("incidents", []), list)
+            else []
+        )
+
+        configured = self.configured_freshness_entities
+        selected = self.selected_freshness_entities
+        changed = self.learner.retain_entities(configured)
         for entity_id in selected:
             state = self.hass.states.get(entity_id)
             if state is not None and state.state not in ("unknown", "unavailable"):
                 changed = self.learner.seed(entity_id, state.last_reported) or changed
         if changed:
-            await self._store.async_save(self.learner.export())
+            await self._freshness_store.async_save(self.learner.export())
 
         if selected:
             self._unsub_state_listener = async_track_state_change_event(
@@ -88,7 +111,7 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
 
     @callback
     def _async_handle_state_change(self, event: Event) -> None:
-        """Learn from changed states using last_updated, not mutable last_reported."""
+        """Learn from changed states using last_updated."""
         new_state = event.data.get("new_state")
         if new_state is None:
             return
@@ -98,52 +121,55 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
 
     @callback
     def _async_handle_state_report(self, event: Event) -> None:
-        """Learn from unchanged state reports using the event's timestamp."""
+        """Learn from unchanged state reports using the updated State timestamp."""
         new_state = event.data.get("new_state")
         if new_state is None:
             return
         self._async_observe_report(
-            event.data.get("entity_id"), new_state, event.data.get("last_reported")
+            event.data.get("entity_id"), new_state, new_state.last_reported
         )
 
     @callback
     def _async_observe_report(self, entity_id: str, new_state, reported_at) -> None:
-        """Record a report only for selected, available entities."""
+        """Record reports only for selected, available entities."""
         if entity_id not in self.selected_freshness_entities:
             return
         if new_state.state in ("unknown", "unavailable") or reported_at is None:
             return
         if self.learner.observe(entity_id, reported_at):
-            self._store.async_delay_save(self.learner.export, FRESHNESS_SAVE_DELAY)
+            self._freshness_store.async_delay_save(
+                self.learner.export, FRESHNESS_SAVE_DELAY
+            )
 
     async def async_reset_freshness_learning(
         self, entity_id: str | None = None
     ) -> None:
-        """Reset one selected profile or all selected profiles."""
-        selected = self.selected_freshness_entities
-        if entity_id is not None and entity_id not in selected:
+        """Reset one configured profile or all configured profiles."""
+        configured = self.configured_freshness_entities
+        if entity_id is not None and entity_id not in configured:
             raise ValueError("Entity is not selected for freshness monitoring")
-        targets = {entity_id} if entity_id else selected
+        targets = {entity_id} if entity_id else configured
         for target in targets:
             self.learner.reset(target)
             state = self.hass.states.get(target)
             if state is not None and state.state not in ("unknown", "unavailable"):
                 self.learner.seed(target, state.last_reported)
-        await self._store.async_save(self.learner.export())
+        await self._freshness_store.async_save(self.learner.export())
         await self.async_request_refresh()
 
     async def async_shutdown(self) -> None:
-        """Release listeners and flush the latest learned profiles."""
+        """Release listeners and flush persistent state."""
         if self._unsub_state_listener is not None:
             self._unsub_state_listener()
             self._unsub_state_listener = None
         if self._unsub_state_report_listener is not None:
             self._unsub_state_report_listener()
             self._unsub_state_report_listener = None
-        await self._store.async_save(self.learner.export())
+        await self._freshness_store.async_save(self.learner.export())
+        await self._incident_store.async_save({"incidents": self._incident_history})
 
     async def _async_update_data(self) -> dict:
-        """Build a point-in-time snapshot from Home Assistant state."""
+        """Build one consistent monitoring, incident and scoring snapshot."""
         now = dt_util.utcnow()
         excluded = set(self.options.get(CONF_EXCLUDED_ENTITIES, []))
         selected = self.selected_freshness_entities
@@ -159,32 +185,66 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             raise UpdateFailed(
                 f"Unable to inspect Home Assistant states: {err}"
             ) from err
+
+        observations = build_observations(unavailable, stale)
+        self._incident_history = reconcile_incidents(
+            observations, self._incident_history, now.isoformat()
+        )
+        self._incident_store.async_delay_save(
+            lambda: {"incidents": self._incident_history}, INCIDENT_SAVE_DELAY
+        )
+        active_incidents = [
+            incident
+            for incident in self._incident_history
+            if incident.get("status") == "active"
+        ]
+        eligible_count = sum(state.entity_id not in excluded for state in states)
+        availability_assessed_count = sum(
+            state.entity_id not in excluded and state.state != "unknown"
+            for state in states
+        )
+        freshness_monitoring_count = sum(
+            profile["status"] == "monitoring" for profile in profiles.values()
+        )
+        freshness_enabled = bool(
+            self.options.get(CONF_MONITOR_FRESHNESS, DEFAULT_MONITOR_FRESHNESS)
+        )
+        score = calculate_health_score(
+            active_incidents,
+            availability_eligible_count=eligible_count,
+            availability_assessed_count=availability_assessed_count,
+            freshness_enabled=freshness_enabled,
+            selected_freshness_count=len(selected),
+            freshness_monitoring_count=freshness_monitoring_count,
+        )
         return {
             "last_scan": now,
             "unavailable_entities": unavailable,
             "stale_entities": stale,
-            "monitored_entity_count": sum(
-                state.entity_id not in excluded for state in states
-            ),
-            "freshness_enabled": bool(
-                self.options.get(CONF_MONITOR_FRESHNESS, DEFAULT_MONITOR_FRESHNESS)
-            ),
+            "monitored_entity_count": eligible_count,
+            "availability_assessed_count": availability_assessed_count,
+            "unknown_entity_count": eligible_count - availability_assessed_count,
+            "freshness_enabled": freshness_enabled,
             "freshness_entity_count": len(selected),
             "freshness_learning_count": sum(
                 profile["status"] == "learning" for profile in profiles.values()
             ),
-            "freshness_monitoring_count": sum(
-                profile["status"] == "monitoring" for profile in profiles.values()
-            ),
+            "freshness_monitoring_count": freshness_monitoring_count,
             "freshness_profiles": profiles,
             "availability_grace_seconds": int(
                 AVAILABILITY_GRACE_PERIOD.total_seconds()
             ),
+            "active_incidents": active_incidents,
+            "incident_history": self._incident_history,
+            "health_score": score["score"],
+            "health_status": score["status"],
+            "health_coverage_percent": score["coverage_percent"],
+            "health_score_breakdown": score,
         }
 
     @callback
     def get_issue_count(self) -> int:
-        """Return current count of monitored observations."""
+        """Return the number of active incidents."""
         if not self.data:
             return 0
-        return len(self.data["unavailable_entities"]) + len(self.data["stale_entities"])
+        return len(self.data["active_incidents"])
