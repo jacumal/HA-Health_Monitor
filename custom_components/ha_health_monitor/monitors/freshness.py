@@ -17,9 +17,9 @@ STALE_MULTIPLIER = 3.0
 class FreshnessLearner:
     """Learn expected reporting cadence from explicitly selected entities.
 
-    The learner is deliberately deterministic and local. It needs five valid
-    intervals before a profile becomes monitorable. Once ready, its expected
-    interval moves gradually using an exponential moving average.
+    The learner is deterministic and local. It needs five valid intervals
+    before a profile becomes monitorable. Once ready, its expected interval
+    moves gradually using an exponential moving average.
     """
 
     def __init__(self, data: dict | None = None) -> None:
@@ -32,45 +32,55 @@ class FreshnessLearner:
 
         record = self._entities.setdefault(
             entity_id,
-            {"last_reported": None, "intervals": [], "expected_interval": None},
+            {
+                "last_reported": None,
+                "intervals": [],
+                "expected_interval": None,
+                "sample_count": 0,
+            },
         )
         previous = record.get("last_reported")
+        if previous is not None:
+            previous_at = datetime.fromisoformat(previous)
+            interval = (reported_at - previous_at).total_seconds()
+            if interval <= 0 or interval > MAX_INTERVAL_SECONDS:
+                return False
+
+            expected = record.get("expected_interval")
+            samples = record.setdefault("intervals", [])
+            if expected is None:
+                samples.append(interval)
+                if len(samples) > MIN_INTERVAL_SAMPLES:
+                    del samples[:-MIN_INTERVAL_SAMPLES]
+                record["sample_count"] = len(samples)
+                if len(samples) >= MIN_INTERVAL_SAMPLES:
+                    record["expected_interval"] = float(median(samples))
+            else:
+                # Limit the influence of one unusual gap, then adapt gradually.
+                bounded = min(max(interval, expected * 0.5), expected * 2.0)
+                record["expected_interval"] = (
+                    expected * (1 - ADAPTATION_ALPHA)
+                    + bounded * ADAPTATION_ALPHA
+                )
+                record["sample_count"] = min(
+                    int(record.get("sample_count", MIN_INTERVAL_SAMPLES)) + 1,
+                    10000,
+                )
+
         record["last_reported"] = reported_at.isoformat()
-        if previous is None:
-            return True
-
-        previous_at = datetime.fromisoformat(previous)
-        interval = (reported_at - previous_at).total_seconds()
-        if interval <= 0 or interval > MAX_INTERVAL_SECONDS:
-            return False
-
-        expected = record.get("expected_interval")
-        samples = record.setdefault("intervals", [])
-        if expected is None:
-            samples.append(interval)
-            if len(samples) > MIN_INTERVAL_SAMPLES:
-                del samples[:-MIN_INTERVAL_SAMPLES]
-            if len(samples) >= MIN_INTERVAL_SAMPLES:
-                record["expected_interval"] = float(median(samples))
-        else:
-            # Limit the influence of one unusual gap, then adapt gradually.
-            bounded = min(max(interval, expected * 0.5), expected * 2.0)
-            record["expected_interval"] = (
-                expected * (1 - ADAPTATION_ALPHA) + bounded * ADAPTATION_ALPHA
-            )
-            record["sample_count"] = min(
-                int(record.get("sample_count", MIN_INTERVAL_SAMPLES)) + 1, 10000
-            )
         return True
 
     def is_ready(self, entity_id: str) -> bool:
         """Return whether enough intervals exist to monitor this entity."""
-        record = self._entities.get(entity_id, {})
-        return record.get("expected_interval") is not None
+        return self.expected_interval(entity_id) is not None
 
     def expected_interval(self, entity_id: str) -> float | None:
         """Return the learned expected interval in seconds."""
         return self._entities.get(entity_id, {}).get("expected_interval")
+
+    def sample_count(self, entity_id: str) -> int:
+        """Return the number of valid intervals contributing to the profile."""
+        return int(self._entities.get(entity_id, {}).get("sample_count", 0))
 
     def stale_after(self, entity_id: str) -> timedelta | None:
         """Return the adaptive stale threshold, if learning is complete."""
