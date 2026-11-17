@@ -1,98 +1,57 @@
-"""Tests for explainable score and coverage."""
-
+"""Tests for consolidated weighted score and monitor coverage."""
 from custom_components.ha_health_monitor.scoring import calculate_health_score
 
 
-def test_unimplemented_categories_reduce_coverage_not_score_silently():
-    result = calculate_health_score(
-        [],
-        availability_eligible_count=20,
-        availability_assessed_count=20,
-        freshness_enabled=True,
-        selected_freshness_count=10,
-        freshness_monitoring_count=10,
+def complete(**overrides):
+    values = dict(
+        availability_eligible_count=10, availability_assessed_count=10,
+        freshness_enabled=False, selected_freshness_count=0,
+        freshness_monitoring_count=0, integration_eligible_count=2,
+        integration_assessed_count=2, automation_eligible_count=4,
+        automation_assessed_count=4,
     )
+    values.update(overrides)
+    return calculate_health_score([], **values)
+
+
+def test_all_monitor_domains_assessed_have_full_coverage():
+    result = complete()
     assert result["score"] == 100
-    assert result["coverage_percent"] == 55
+    assert result["coverage_percent"] == 100
+    assert result["status"] == "healthy"
+
+
+def test_partial_integration_coverage_is_visible():
+    result = complete(integration_assessed_count=1)
+    assert result["coverage_percent"] == 87.5
     assert result["status"] == "partial"
-    assert "integrations" in result["unassessed_categories"]
-    assert "automations" in result["unassessed_categories"]
+    assert result["categories"]["integrations"]["assessment"] == "partial"
 
 
-def test_unknown_entities_reduce_availability_coverage():
-    result = calculate_health_score(
-        [],
-        availability_eligible_count=10,
-        availability_assessed_count=8,
-        freshness_enabled=False,
-        selected_freshness_count=0,
-        freshness_monitoring_count=0,
+def test_freshness_learning_reduces_coverage():
+    result = complete(
+        freshness_enabled=True, selected_freshness_count=10,
+        freshness_monitoring_count=5,
     )
-    assert result["coverage_percent"] == 24
-    assert result["categories"]["availability"]["assessment"] == "partial"
-
-
-def test_learning_entities_reduce_freshness_coverage_until_baseline_ready():
-    result = calculate_health_score(
-        [],
-        availability_eligible_count=10,
-        availability_assessed_count=10,
-        freshness_enabled=True,
-        selected_freshness_count=10,
-        freshness_monitoring_count=4,
-    )
-    assert result["coverage_percent"] == 40
+    assert result["coverage_percent"] == 90
     assert result["categories"]["freshness"]["assessment"] == "partial"
 
 
-def test_active_issues_produce_traceable_deductions_once():
+def test_incident_deductions_are_traceable_and_capped():
     incidents = [
-        {
-            "issue_id": "issue_avail_1",
-            "category": "availability",
-            "entity_id": "sensor.a",
-            "severity": "error",
-        },
-        {
-            "issue_id": "issue_stale_1",
-            "category": "freshness",
-            "entity_id": "sensor.b",
-            "severity": "warning",
-        },
+        {"issue_id": f"int_{i}", "category": "integrations",
+         "rule_id": "integration.setup_failed", "severity": "error",
+         "target": f"entry_{i}"}
+        for i in range(5)
     ]
     result = calculate_health_score(
-        incidents,
-        availability_eligible_count=10,
-        availability_assessed_count=10,
-        freshness_enabled=True,
-        selected_freshness_count=5,
-        freshness_monitoring_count=5,
+        incidents, availability_eligible_count=10, availability_assessed_count=10,
+        freshness_enabled=False, selected_freshness_count=0,
+        freshness_monitoring_count=0, integration_eligible_count=5,
+        integration_assessed_count=5, automation_eligible_count=3,
+        automation_assessed_count=3,
     )
-    assert result["score"] < 100
-    assert {item["issue_id"] for item in result["deductions"]} == {
-        "issue_avail_1",
-        "issue_stale_1",
-    }
-
-
-def test_category_caps_are_reflected_in_individual_deductions():
-    incidents = [
-        {
-            "issue_id": f"issue_{index}",
-            "category": "availability",
-            "entity_id": f"sensor.{index}",
-            "severity": "error",
-        }
-        for index in range(8)
-    ]
-    result = calculate_health_score(
-        incidents,
-        availability_eligible_count=10,
-        availability_assessed_count=10,
-        freshness_enabled=False,
-        selected_freshness_count=0,
-        freshness_monitoring_count=0,
-    )
-    availability = result["categories"]["availability"]
-    assert availability["deducted_points"] == 30
-    assert sum(item["points"] for item in availability["deductions"]) == 30
+    category = result["categories"]["integrations"]
+    assert category["deducted_points"] == 25
+    assert sum(x["points"] for x in category["deductions"]) == 25
+    assert len({x["issue_id"] for x in result["deductions"]}) == 5
