@@ -91,7 +91,9 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
         if self.learner.observe(entity_id, new_state.last_reported):
             self._store.async_delay_save(self.learner.export, FRESHNESS_SAVE_DELAY)
 
-    async def async_reset_freshness_learning(self, entity_id: str | None = None) -> None:
+    async def async_reset_freshness_learning(
+        self, entity_id: str | None = None
+    ) -> None:
         """Reset one selected profile or all selected profiles."""
         selected = self.selected_freshness_entities
         if entity_id is not None and entity_id not in selected:

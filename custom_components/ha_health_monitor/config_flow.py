@@ -78,7 +78,9 @@ class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(
                     CONF_FRESHNESS_ENTITIES,
                     default=options.get(CONF_FRESHNESS_ENTITIES, []),
-                ): selector.EntitySelector(selector.EntitySelectorConfig(multiple=True)),
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(multiple=True)
+                ),
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)
