@@ -54,6 +54,12 @@
       },
       "last_scan": {
         "name": "Last scan"
+      },
+      "failed_integrations": {
+        "name": "Failed integrations"
+      },
+      "unavailable_automations": {
+        "name": "Unavailable automations"
       }
     },
     "binary_sensor": {
