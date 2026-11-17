@@ -34,12 +34,26 @@
   },
   "entity": {
     "sensor": {
-      "unavailable_entities": { "name": "Entidades no disponibles" },
-      "stale_entities": { "name": "Entidades sin actualizar" },
-      "last_scan": { "name": "Último análisis" }
+      "unavailable_entities": {
+        "name": "Entidades no disponibles"
+      },
+      "stale_entities": {
+        "name": "Entidades sin actualizar"
+      },
+      "last_scan": {
+        "name": "Último análisis"
+      }
     },
     "binary_sensor": {
-      "system_healthy": { "name": "El sistema presenta problemas" }
+      "system_healthy": {
+        "name": "El sistema presenta problemas"
+      }
+    }
+  },
+  "services": {
+    "scan_now": {
+      "name": "Analizar ahora",
+      "description": "Ejecuta un análisis inmediato de HA Health Monitor."
     }
   }
 }
