@@ -84,8 +84,14 @@ class FreshnessLearner:
 
     def seed(self, entity_id: str, reported_at: datetime) -> bool:
         """Set initial timestamp without counting startup as a sample."""
-        if reported_at.tzinfo is None or self.has_profile(entity_id):
+        if reported_at.tzinfo is None:
             return False
+        if self.has_profile(entity_id):
+            record = self._entities[entity_id]
+            if record.get("last_reported") is not None:
+                return False
+            record["last_reported"] = reported_at.isoformat()
+            return True
         self._entities[entity_id] = {
             "last_reported": reported_at.isoformat(),
             "intervals": [],

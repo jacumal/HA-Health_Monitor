@@ -182,3 +182,22 @@ def test_manual_threshold_multiplier_changes_stale_sensitivity():
     assert learner.stale_after("sensor.temperature", multiplier=5.0) == (
         timedelta(minutes=25)
     )
+
+
+def test_seed_repairs_a_profile_with_invalid_persisted_timestamp():
+    learner = FreshnessLearner.from_storage({
+        "entities": {
+            "sensor.recovered": {
+                "last_reported": "broken",
+                "intervals": [300, 300, 300, 300, 300],
+                "expected_interval": 300,
+                "sample_count": 5,
+            }
+        }
+    })
+    baseline = datetime(2026, 11, 17, 8, 0, tzinfo=UTC)
+    assert learner.seed("sensor.recovered", baseline)
+    assert learner.export()["entities"]["sensor.recovered"]["last_reported"] == (
+        baseline.isoformat()
+    )
+    assert learner.status("sensor.recovered") == "learning"
