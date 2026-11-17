@@ -102,7 +102,12 @@ def test_corrupt_storage_is_safely_ignored():
                 "expected_interval": 300,
                 "sample_count": 5,
             },
-            "sensor.bad": {"last_reported": "not-a-date", "intervals": "broken"},
+            "sensor.bad": {
+                "last_reported": "not-a-date",
+                "intervals": [300, 300, 300, 300, 300],
+                "expected_interval": 300,
+                "sample_count": 5,
+            },
         }
     })
     assert learner.is_ready("sensor.good")

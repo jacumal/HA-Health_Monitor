@@ -42,6 +42,14 @@ class FreshnessLearner:
         except ValueError:
             last_reported = None
 
+        if last_reported is None:
+            return {
+                "last_reported": None,
+                "intervals": [],
+                "expected_interval": None,
+                "sample_count": 0,
+            }
+
         intervals = profile.get("intervals", [])
         if not isinstance(intervals, list):
             intervals = []
