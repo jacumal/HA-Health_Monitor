@@ -1,0 +1,39 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up HA Health Monitor",
+        "description": "Add the integration. Monitoring starts with safe default settings."
+      }
+    },
+    "abort": {
+      "already_configured": "HA Health Monitor is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Monitoring settings",
+        "description": "Choose what to monitor. Freshness monitoring is opt-in and only applies to entities you select."
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "unavailable_entities": {
+        "name": "Unavailable entities"
+      },
+      "stale_entities": {
+        "name": "Stale entities"
+      },
+      "last_scan": {
+        "name": "Last scan"
+      }
+    },
+    "binary_sensor": {
+      "system_healthy": {
+        "name": "System has issues"
+      }
+    }
+  }
+}
