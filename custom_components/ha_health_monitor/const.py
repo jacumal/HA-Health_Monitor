@@ -1,9 +1,6 @@
 """Constants for HA Health Monitor."""
 
-from datetime import timedelta
-
 DOMAIN = "ha_health_monitor"
-PLATFORMS = ["sensor", "binary_sensor"]
 
 CONF_SCAN_INTERVAL = "scan_interval_minutes"
 CONF_EXCLUDED_ENTITIES = "excluded_entities"
@@ -18,6 +15,3 @@ MIN_SCAN_INTERVAL = 1
 MAX_SCAN_INTERVAL = 60
 
 SERVICE_SCAN_NOW = "scan_now"
-
-STORAGE_VERSION = 1
-UPDATE_INTERVAL = timedelta(minutes=DEFAULT_SCAN_INTERVAL)
