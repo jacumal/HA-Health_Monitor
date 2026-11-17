@@ -25,7 +25,7 @@
           "scan_interval_minutes": "Frecuencia con la que se revisan los estados de Home Assistant.",
           "excluded_entities": "Estas entidades se excluyen de los controles de disponibilidad y actualización.",
           "monitor_freshness": "Desactivado por defecto. Solo se observan las entidades seleccionadas. Cada una aprende su propia frecuencia de actualización a partir de comunicaciones reales.",
-          "freshness_entities": "Selecciona únicamente entidades que deberían comunicar regularmente. Cada una necesita al menos cinco intervalos válidos antes de detectar retrasos. El aprendizaje depende de la frecuencia de cada entidad."
+          "freshness_entities": "Selecciona entidades de tipo sensor o sensor binario que deberían comunicar regularmente. Cada una necesita al menos cinco intervalos válidos antes de detectar retrasos. El aprendizaje depende de la frecuencia de cada entidad."
         }
       }
     }

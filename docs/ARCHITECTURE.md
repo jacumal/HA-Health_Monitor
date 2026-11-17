@@ -6,7 +6,7 @@ Early development backend foundation, not a stable release. The implemented path
 
 ## Freshness monitor
 
-- Only explicitly selected entities are eligible for observation, learning and stale detection. Globally excluded entities are excluded too.
+- Only explicitly selected sensor and binary sensor entities are eligible for observation, learning and stale detection. Globally excluded entities are excluded too. Missing entities receive a missing profile state; unknown and unavailable entities are paused and do not contribute freshness coverage.
 - The coordinator subscribes only to selected entity IDs using Home Assistant state-change and state-report events. Changed states use last_updated; unchanged reports use the state_reported event timestamp.
 - Startup seeds a baseline but is never counted as a sample.
 - Five valid intervals are required. Initial cadence is the median of those intervals.

@@ -107,7 +107,7 @@ def calculate_health_score(
     )
     if score is None:
         status = "not_assessed"
-    elif coverage_percent < 80:
+    elif coverage_percent < 100:
         status = "partial"
     elif score >= 90:
         status = "healthy"

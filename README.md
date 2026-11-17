@@ -25,10 +25,10 @@ HA Health Monitor is an open-source Home Assistant integration for local observa
 
 ## Freshness behavior
 
-- Only entities explicitly selected by the user are observed.
+- Only explicitly selected sensor and binary sensor entities are observed.
 - Changed values and same-value reports are both captured using Home Assistant's filtered state events.
 - Startup seeds a baseline but never counts as a reporting interval.
-- Each entity needs five valid intervals. There is no fixed learning window.
+- Each entity needs five valid intervals. There is no fixed learning window. Missing, unknown and unavailable entities are not counted as fully monitored.
 - Initial cadence is the median of the first five intervals.
 - Extreme intervals are ignored as cadence samples so temporary outages do not poison learning.
 - Once ready, cadence adapts gradually; individual intervals are bounded to reduce outlier influence.

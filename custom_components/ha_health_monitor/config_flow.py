@@ -83,7 +83,9 @@ class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
                     CONF_FRESHNESS_ENTITIES,
                     default=options.get(CONF_FRESHNESS_ENTITIES, []),
                 ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(multiple=True)
+                    selector.EntitySelectorConfig(
+                        domain=["sensor", "binary_sensor"], multiple=True
+                    )
                 ),
             }
         )

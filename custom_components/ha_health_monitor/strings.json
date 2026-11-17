@@ -25,7 +25,7 @@
           "scan_interval_minutes": "How often Home Assistant state is checked.",
           "excluded_entities": "These entities are excluded from availability and freshness checks.",
           "monitor_freshness": "Disabled by default. Only selected entities are observed. Each entity learns its own update cadence from real reports.",
-          "freshness_entities": "Select only entities expected to report regularly. Each needs at least five valid intervals before stale detection starts. The learning period depends on the entity."
+          "freshness_entities": "Select sensor or binary sensor entities expected to report regularly. Each needs at least five valid intervals before stale detection starts. The learning period depends on the entity."
         }
       }
     }
