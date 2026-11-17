@@ -3,6 +3,8 @@
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
+from homeassistant.core import Event
+
 from custom_components.ha_health_monitor.const import (
     CONF_EXCLUDED_ENTITIES,
     CONF_FRESHNESS_ENTITIES,
@@ -28,7 +30,7 @@ async def test_freshness_selection_respects_exclusions(hass):
     assert coordinator.selected_freshness_entities == {"sensor.one"}
 
 
-async def test_freshness_event_observer_ignores_unselected_entities(hass):
+async def test_changed_and_unchanged_reports_train_selected_entities(hass):
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={},
@@ -41,14 +43,33 @@ async def test_freshness_event_observer_ignores_unselected_entities(hass):
     coordinator = HealthMonitorCoordinator(hass, entry)
     await coordinator.async_initialize()
     baseline = hass.states.get("sensor.selected").last_reported
-    state = SimpleNamespace(state="20")
-    coordinator._async_observe_report(
-        "sensor.selected", state, baseline + timedelta(minutes=5)
+
+    unchanged_state = SimpleNamespace(
+        state="20", last_reported=baseline + timedelta(minutes=5)
+    )
+    coordinator._async_handle_state_report(
+        Event(
+            "state_reported",
+            {
+                "entity_id": "sensor.selected",
+                "new_state": unchanged_state,
+                "old_last_reported": baseline,
+            },
+        )
+    )
+    changed_state = SimpleNamespace(
+        state="21", last_updated=baseline + timedelta(minutes=10)
+    )
+    coordinator._async_handle_state_change(
+        Event(
+            "state_changed",
+            {"entity_id": "sensor.selected", "new_state": changed_state},
+        )
     )
     coordinator._async_observe_report(
-        "sensor.other", state, baseline + timedelta(minutes=10)
+        "sensor.other", changed_state, baseline + timedelta(minutes=15)
     )
-    assert coordinator.learner.sample_count("sensor.selected") == 1
+    assert coordinator.learner.sample_count("sensor.selected") == 2
     assert not coordinator.learner.has_profile("sensor.other")
     await coordinator.async_shutdown()
 

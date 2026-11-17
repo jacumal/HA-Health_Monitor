@@ -6,7 +6,6 @@ from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -27,14 +26,14 @@ async def async_setup_entry(
 class HealthSystemHealthySensor(
     CoordinatorEntity[HealthMonitorCoordinator], BinarySensorEntity
 ):
-    """Report whether any currently monitored issue observations exist."""
+    """Report known issues without equating missing coverage with healthy."""
 
     _attr_has_entity_name = True
     _attr_translation_key = "system_healthy"
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
 
     def __init__(
-        self, coordinator: HealthMonitorCoordinator, entry: ConfigEntry
+        self, coordinator: HealthMonitorCoordinator, entry: HealthMonitorConfigEntry
     ) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_system_healthy"
