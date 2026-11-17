@@ -52,6 +52,18 @@ ENTITY_DESCRIPTIONS = (
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SensorEntityDescription(
+        key="failed_integrations",
+        translation_key="failed_integrations",
+        icon="mdi:puzzle-alert",
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    SensorEntityDescription(
+        key="unavailable_automations",
+        translation_key="unavailable_automations",
+        icon="mdi:robot-confused",
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    SensorEntityDescription(
         key="last_scan",
         translation_key="last_scan",
         device_class=SensorDeviceClass.TIMESTAMP,
@@ -105,6 +117,10 @@ class HealthMonitorSensor(CoordinatorEntity[HealthMonitorCoordinator], SensorEnt
             return len(data["active_incidents"])
         if key == "incident_history":
             return len(data["incident_history"])
+        if key == "failed_integrations":
+            return data["integration_health"]["failed_count"]
+        if key == "unavailable_automations":
+            return data["automation_health"]["unavailable_count"]
         if key == "last_scan":
             return data["last_scan"]
         return len(data[key])
@@ -122,7 +138,14 @@ class HealthMonitorSensor(CoordinatorEntity[HealthMonitorCoordinator], SensorEnt
                 "breakdown": data["health_score_breakdown"],
             }
         if key == "active_incidents":
-            return {"incidents": data["active_incidents"]}
+            return {
+                "incidents": data["active_incidents"],
+                "correlation_groups": data["correlation_groups"],
+            }
+        if key == "failed_integrations":
+            return data["integration_health"]
+        if key == "unavailable_automations":
+            return data["automation_health"]
         if key == "incident_history":
             return {"incidents": data["incident_history"][-50:]}
         if key == "unavailable_entities":
