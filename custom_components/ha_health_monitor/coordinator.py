@@ -126,7 +126,9 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
                 states, selected, excluded, self.learner, now
             )
         except (AttributeError, TypeError, ValueError) as err:
-            raise UpdateFailed(f"Unable to inspect Home Assistant states: {err}") from err
+            raise UpdateFailed(
+                f"Unable to inspect Home Assistant states: {err}"
+            ) from err
         return {
             "last_scan": now,
             "unavailable_entities": unavailable,

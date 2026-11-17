@@ -148,10 +148,16 @@ def collect_adaptive_stale(
         profiles[entity_id] = {
             "status": learner.status(entity_id),
             "sample_count": learner.sample_count(entity_id),
-            "expected_interval_seconds": round(expected) if expected is not None else None,
+            "expected_interval_seconds": (
+                round(expected) if expected is not None else None
+            ),
             "threshold_seconds": int(threshold.total_seconds()) if threshold else None,
         }
-        if state is None or state.state in ("unknown", "unavailable") or threshold is None:
+        if (
+            state is None
+            or state.state in ("unknown", "unavailable")
+            or threshold is None
+        ):
             continue
         age = now - state.last_reported
         if age > threshold:
