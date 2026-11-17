@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import voluptuous as vol
-
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers import selector
+
+import voluptuous as vol
 
 from .const import (
     CONF_EXCLUDED_ENTITIES,
@@ -67,7 +67,9 @@ class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(
                     CONF_EXCLUDED_ENTITIES,
                     default=options.get(CONF_EXCLUDED_ENTITIES, []),
-                ): selector.EntitySelector(selector.EntitySelectorConfig(multiple=True)),
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(multiple=True)
+                ),
                 vol.Optional(
                     CONF_MONITOR_FRESHNESS,
                     default=options.get(

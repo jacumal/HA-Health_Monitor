@@ -1,6 +1,6 @@
 """Tests for selected-entity freshness monitoring and adaptive learning."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 from custom_components.ha_health_monitor.monitors.freshness import (
@@ -20,7 +20,7 @@ def make_state(entity_id, state, last_reported, name="Test entity"):
 
 def trained_learner(entity_id="sensor.temperature"):
     learner = FreshnessLearner()
-    start = datetime(2026, 11, 17, 8, 0, tzinfo=timezone.utc)
+    start = datetime(2026, 11, 17, 8, 0, tzinfo=UTC)
     learner.seed(entity_id, start)
     for minute in range(5, 31, 5):
         learner.observe(entity_id, start + timedelta(minutes=minute))
@@ -29,7 +29,7 @@ def trained_learner(entity_id="sensor.temperature"):
 
 def test_five_valid_intervals_are_required():
     learner = FreshnessLearner()
-    start = datetime(2026, 11, 17, 8, 0, tzinfo=timezone.utc)
+    start = datetime(2026, 11, 17, 8, 0, tzinfo=UTC)
     learner.seed("sensor.temperature", start)
     for minute in range(5, 26, 5):
         learner.observe("sensor.temperature", start + timedelta(minutes=minute))
@@ -67,7 +67,7 @@ def test_reset_can_target_one_entity_or_all_and_storage_round_trips():
 
 def test_invalid_timestamps_do_not_train():
     learner = FreshnessLearner()
-    start = datetime(2026, 11, 17, 8, 0, tzinfo=timezone.utc)
+    start = datetime(2026, 11, 17, 8, 0, tzinfo=UTC)
     learner.seed("sensor.temperature", start)
     assert not learner.observe("sensor.temperature", start.replace(tzinfo=None))
     assert not learner.observe("sensor.temperature", start - timedelta(minutes=1))
@@ -84,7 +84,7 @@ def test_long_outage_resets_baseline_without_polluting_cadence():
 
 
 def test_learning_entities_are_not_flagged_stale():
-    now = datetime(2026, 11, 17, 10, 0, tzinfo=timezone.utc)
+    now = datetime(2026, 11, 17, 10, 0, tzinfo=UTC)
     state = make_state("sensor.temperature", "21", now - timedelta(hours=3))
     learner = FreshnessLearner()
     learner.seed("sensor.temperature", now - timedelta(hours=4))
@@ -96,7 +96,7 @@ def test_learning_entities_are_not_flagged_stale():
 
 
 def test_only_selected_and_trained_entities_can_be_stale():
-    now = datetime(2026, 11, 17, 10, 0, tzinfo=timezone.utc)
+    now = datetime(2026, 11, 17, 10, 0, tzinfo=UTC)
     learner, _ = trained_learner()
     states = [
         make_state("sensor.temperature", "21", now - timedelta(minutes=20)),
@@ -112,7 +112,7 @@ def test_only_selected_and_trained_entities_can_be_stale():
 def test_removed_entities_are_pruned_but_retained_entities_survive():
     learner, _ = trained_learner("sensor.keep")
     learner.seed(
-        "sensor.remove", datetime(2026, 11, 17, 8, 0, tzinfo=timezone.utc)
+        "sensor.remove", datetime(2026, 11, 17, 8, 0, tzinfo=UTC)
     )
     assert learner.retain_entities({"sensor.keep"})
     assert learner.has_profile("sensor.keep")
