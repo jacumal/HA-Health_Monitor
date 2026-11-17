@@ -1,11 +1,13 @@
 {
   "domain": "ha_health_monitor",
   "name": "HA Health Monitor",
-  "codeowners": ["@jacumal"],
+  "codeowners": [
+    "@jacumal"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/jacumal/HA-Health_Monitor",
   "issue_tracker": "https://github.com/jacumal/HA-Health_Monitor/issues",
-  "iot_class": "local_push",
+  "iot_class": "calculated",
   "integration_type": "service",
   "version": "0.1.0"
 }
