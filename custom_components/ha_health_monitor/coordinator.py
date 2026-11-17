@@ -27,7 +27,11 @@ from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
-from .incident_engine import build_observations, correlate_incidents, reconcile_incidents
+from .incident_engine import (
+    build_observations,
+    correlate_incidents,
+    reconcile_incidents,
+)
 from .monitors.automations import collect_automation_health
 from .monitors.availability import collect_unavailable
 from .monitors.freshness import FreshnessLearner, collect_adaptive_stale
