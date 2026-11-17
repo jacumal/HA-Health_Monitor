@@ -1,59 +1,6 @@
 {
-  "config": {
-    "step": {
-      "user": {
-        "title": "Set up HA Health Monitor",
-        "description": "Add the integration. Monitoring starts with safe default settings."
-      }
-    },
-    "abort": {
-      "already_configured": "HA Health Monitor is already configured."
-    }
-  },
-  "options": {
-    "step": {
-      "init": {
-        "title": "Monitoring settings",
-        "description": "Choose what to monitor. Freshness monitoring is opt-in and only applies to entities you select.",
-        "data": {
-          "scan_interval_minutes": "Scan interval",
-          "excluded_entities": "Entities to exclude",
-          "monitor_freshness": "Enable freshness monitoring",
-          "freshness_entities": "Entities to check for stale updates",
-          "freshness_threshold_minutes": "Maximum time without an update"
-        },
-        "data_description": {
-          "scan_interval_minutes": "How often Home Assistant state is checked.",
-          "excluded_entities": "These entities are excluded from availability and freshness checks.",
-          "monitor_freshness": "Disabled by default to avoid false positives for entities that update only when their value changes.",
-          "freshness_entities": "Select only entities expected to update regularly.",
-          "freshness_threshold_minutes": "An issue is reported when a selected entity has not reported a state update for longer than this period."
-        }
-      }
-    }
-  },
-  "entity": {
-    "sensor": {
-      "unavailable_entities": {
-        "name": "Unavailable entities"
-      },
-      "stale_entities": {
-        "name": "Stale entities"
-      },
-      "last_scan": {
-        "name": "Last scan"
-      }
-    },
-    "binary_sensor": {
-      "system_healthy": {
-        "name": "System has issues"
-      }
-    }
-  },
-  "services": {
-    "scan_now": {
-      "name": "Scan now",
-      "description": "Run an immediate HA Health Monitor scan."
-    }
-  }
+  "config": {"step": {"user": {"title": "Set up HA Health Monitor", "description": "Add the integration. Monitoring starts with safe default settings."}}, "abort": {"already_configured": "HA Health Monitor is already configured."}},
+  "options": {"step": {"init": {"title": "Monitoring settings", "description": "Choose what to monitor. Freshness learning is local, adaptive and only applies to entities you select.", "data": {"scan_interval_minutes": "Scan interval", "excluded_entities": "Entities to exclude", "monitor_freshness": "Enable adaptive freshness monitoring", "freshness_entities": "Entities to learn and monitor"}, "data_description": {"scan_interval_minutes": "How often Home Assistant state is checked.", "excluded_entities": "These entities are excluded from availability and freshness checks.", "monitor_freshness": "Disabled by default. Only selected entities are observed. Each entity learns its own update cadence from real reports.", "freshness_entities": "Select only entities expected to report regularly. Each needs at least five valid intervals before stale detection starts. The learning period depends on the entity."}}}},
+  "entity": {"sensor": {"unavailable_entities": {"name": "Unavailable entities"}, "stale_entities": {"name": "Stale entities"}, "last_scan": {"name": "Last scan"}}, "binary_sensor": {"system_healthy": {"name": "System has issues"}}},
+  "services": {"scan_now": {"name": "Scan now", "description": "Run an immediate HA Health Monitor scan."}, "reset_freshness_learning": {"name": "Reset freshness learning", "description": "Reset the learned update cadence for one selected entity or all selected entities.", "fields": {"entity_id": {"name": "Entity", "description": "Leave empty to reset all selected entities."}}}}
 }

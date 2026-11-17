@@ -1,3 +1,14 @@
 scan_now:
   name: Scan now
   description: Run an immediate HA Health Monitor scan.
+
+reset_freshness_learning:
+  name: Reset freshness learning
+  description: Reset the learned update cadence for one selected entity or all selected entities.
+  fields:
+    entity_id:
+      name: Entity
+      description: Leave empty to reset all selected freshness profiles.
+      selector:
+        entity:
+          multiple: false

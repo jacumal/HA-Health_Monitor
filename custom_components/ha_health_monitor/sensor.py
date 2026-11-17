@@ -97,8 +97,12 @@ class HealthMonitorSensor(CoordinatorEntity[HealthMonitorCoordinator], SensorEnt
                 "selected_entity_count": self.coordinator.data[
                     "freshness_entity_count"
                 ],
-                "threshold_minutes": self.coordinator.data[
-                    "freshness_threshold_minutes"
+                "learning_entity_count": self.coordinator.data[
+                    "freshness_learning_count"
                 ],
+                "monitoring_entity_count": self.coordinator.data[
+                    "freshness_monitoring_count"
+                ],
+                "profiles": self.coordinator.data["freshness_profiles"],
             }
         return {}

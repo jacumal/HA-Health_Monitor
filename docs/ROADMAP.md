@@ -2,56 +2,42 @@
 
 ## Product acceptance gate — applies to every phase
 
-All work must preserve the five non-negotiable pillars: real usefulness, easy and pleasant interface, easy graphical configuration, a first-class Hybrid Lovelace card, and multilingual support. See [Product pillars](PRODUCT_PILLARS.md). A feature is not complete merely because its backend works.
+All work must preserve the five non-negotiable pillars: real usefulness, easy and pleasant interface, easy graphical configuration, a first-class Hybrid Lovelace card, and multilingual support. See [Product pillars](PRODUCT_PILLARS.md).
 
 ## Phase 0 — Product definition and prototype
-- [x] Confirm Hybrid visual direction.
-- [x] Confirm Both card organization (overview + independent modules).
-- [x] Record UI-first setup and no mandatory YAML.
-- [x] Define architecture and UI prototype specification.
-- [x] Define product pillars and acceptance gate.
-- [x] Add internationalization as a foundational requirement (English + Spanish initial locales).
-- [x] Define visual editor essentials/advanced controls, defaults, validation and migration behavior.
-- [x] Define score explanation contract and interaction acceptance scenarios.
-- [ ] Review the resulting interaction prototype with the product owner before frontend implementation.
+- [x] Confirm Hybrid visual direction and overview + independent module cards.
+- [x] Define UI-first setup, architecture, product pillars and internationalization.
+- [ ] Review interaction prototype before frontend implementation.
 
 ## Phase 1 — Backend foundation
-- [x] Integration skeleton and manifest (initial development package).
-- [x] Config Flow / Options Flow with useful defaults.
-- [ ] Typed models for observations, incidents and coverage.
-- [x] Translation catalogs for English and Spanish from the first config-flow implementation.
-- [ ] Persistence and coordinator lifecycle.
-- [x] CI and unit-test foundation, including translation catalog and monitor unit tests (first pass; CI result pending).
+- [x] Integration skeleton, Config Flow / Options Flow and translation catalogs.
+- [x] Freshness adaptive learning core.
+- [x] Selected-entity state event collection.
+- [x] Per-entry profile persistence using Home Assistant Store.
+- [x] Manual per-entity and global reset service.
+- [x] Learning and monitoring status exposed in sensor attributes.
+- [ ] Execute CI successfully and validate on a real HA OS installation.
 
 ## Phase 2 — Core monitoring
-- [ ] Availability monitor.
-- [ ] Freshness monitor and baseline handling.
+- [ ] Availability monitor hardening.
+- [x] Freshness adaptive learning flow (real-installation validation pending).
 - [ ] Integration monitor using supported HA signals.
 - [ ] Automation monitor with documented capabilities/limits.
 - [ ] Incident lifecycle, grouping and correlation.
 - [ ] Explainable score and confidence/coverage calculation.
 - [ ] Actionable, evidence-grounded remediation guidance.
-- [ ] Localized issue explanations and recommendations in all shipped locales.
 
 ## Phase 3 — Lovelace frontend
 - [ ] Companion repository/package.
-- [ ] Shared Hybrid design tokens and components.
-- [ ] Locale catalogs and locale-aware formatting in frontend foundation.
-- [ ] Overview card with “Why not 100?” score explanation.
-- [ ] Independent module cards.
-- [ ] Prioritized issue summaries and detailed issue view.
-- [ ] Visual card editor: compact/detailed, charts, time range, inline/popup, visible sections.
-- [ ] Responsive light/dark themes and accessibility review.
-- [ ] English and Spanish parity across every user-facing frontend string.
+- [ ] Hybrid overview and independent module cards.
+- [ ] Score explanation, issue details and visual editor.
+- [ ] English and Spanish parity, responsive light/dark themes and accessibility.
 
 ## Phase 4 — Real-world validation
 - [ ] Test on a real HA OS installation.
 - [ ] Validate Zigbee, Shelly, Netatmo, ESPHome and other common integrations.
-- [ ] Tune false-positive handling and baseline learning.
-- [ ] Validate diagnostics privacy and performance.
-- [ ] Usability review: a normal user can install, configure and understand the dashboard without editing YAML.
-- [ ] Review language fallback, date/number formatting and translation quality.
-- [ ] Prepare HACS packaging and release docs.
+- [ ] Tune false-positive handling, cadence learning and threshold.
+- [ ] Validate privacy, performance and HACS packaging.
 
 ## Release principle
-Do not advertise a monitoring domain as complete until it has reliable signal sources, documented limitations, automated tests, real-installation validation, translation coverage for all shipped locales and meets all five product pillars.
+Do not advertise a monitoring domain as complete until it has reliable signal sources, automated tests, real-installation validation, translation coverage and meets all five product pillars.

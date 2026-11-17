@@ -11,10 +11,8 @@ from homeassistant.helpers import selector
 from .const import (
     CONF_EXCLUDED_ENTITIES,
     CONF_FRESHNESS_ENTITIES,
-    CONF_FRESHNESS_THRESHOLD,
     CONF_MONITOR_FRESHNESS,
     CONF_SCAN_INTERVAL,
-    DEFAULT_FRESHNESS_THRESHOLD,
     DEFAULT_MONITOR_FRESHNESS,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
@@ -32,10 +30,8 @@ class HAHealthMonitorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Create the integration entry."""
         if self._async_current_entries():
             return self.async_abort(reason="already_configured")
-
         if user_input is not None:
             return self.async_create_entry(title="HA Health Monitor", data={})
-
         return self.async_show_form(step_id="user", data_schema=vol.Schema({}))
 
     @staticmethod
@@ -82,20 +78,6 @@ class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
                     CONF_FRESHNESS_ENTITIES,
                     default=options.get(CONF_FRESHNESS_ENTITIES, []),
                 ): selector.EntitySelector(selector.EntitySelectorConfig(multiple=True)),
-                vol.Optional(
-                    CONF_FRESHNESS_THRESHOLD,
-                    default=options.get(
-                        CONF_FRESHNESS_THRESHOLD, DEFAULT_FRESHNESS_THRESHOLD
-                    ),
-                ): selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        min=5,
-                        max=1440,
-                        step=5,
-                        mode=selector.NumberSelectorMode.BOX,
-                        unit_of_measurement="min",
-                    )
-                ),
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)
