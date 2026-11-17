@@ -16,12 +16,12 @@ All work must preserve the five non-negotiable pillars: real usefulness, easy an
 - [ ] Review the resulting interaction prototype with the product owner before frontend implementation.
 
 ## Phase 1 — Backend foundation
-- [ ] Integration skeleton and manifest.
-- [ ] Config Flow / Options Flow with useful defaults.
+- [x] Integration skeleton and manifest (initial development package).
+- [x] Config Flow / Options Flow with useful defaults.
 - [ ] Typed models for observations, incidents and coverage.
-- [ ] Translation catalogs for English and Spanish from the first config-flow implementation.
+- [x] Translation catalogs for English and Spanish from the first config-flow implementation.
 - [ ] Persistence and coordinator lifecycle.
-- [ ] CI and unit-test foundation, including translation validation.
+- [x] CI and unit-test foundation, including translation catalog and monitor unit tests (first pass; CI result pending).
 
 ## Phase 2 — Core monitoring
 - [ ] Availability monitor.
