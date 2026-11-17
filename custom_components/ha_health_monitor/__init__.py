@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 from datetime import timedelta
-import logging
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -19,8 +17,6 @@ from .const import (
     SERVICE_SCAN_NOW,
 )
 from .coordinator import HealthMonitorCoordinator
-
-_LOGGER = logging.getLogger(__name__)
 
 type HealthMonitorConfigEntry = ConfigEntry[HealthMonitorCoordinator]
 
