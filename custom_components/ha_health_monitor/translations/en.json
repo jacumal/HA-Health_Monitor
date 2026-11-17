@@ -27,7 +27,7 @@
           "excluded_entities": "These entities are excluded from availability and freshness checks.",
           "monitor_freshness": "Disabled by default to avoid false positives for entities that update only when their value changes.",
           "freshness_entities": "Select only entities expected to update regularly.",
-          "freshness_threshold_minutes": "An issue is reported when a selected entity has not changed for longer than this period."
+          "freshness_threshold_minutes": "An issue is reported when a selected entity has not reported a state update for longer than this period."
         }
       }
     }
