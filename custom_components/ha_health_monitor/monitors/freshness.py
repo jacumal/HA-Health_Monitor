@@ -177,10 +177,21 @@ class FreshnessLearner:
         """Return valid intervals contributing to the profile."""
         return int(self._entities.get(entity_id, {}).get("sample_count", 0))
 
-    def stale_after(self, entity_id: str) -> timedelta | None:
-        """Return adaptive stale threshold, if learning is complete."""
+    def stale_after(
+        self, entity_id: str, multiplier: float = STALE_MULTIPLIER
+    ) -> timedelta | None:
+        """Return adaptive stale threshold using the manual tolerance multiplier."""
         expected = self.expected_interval(entity_id)
-        return timedelta(seconds=expected * STALE_MULTIPLIER) if expected else None
+        if expected is None:
+            return None
+        try:
+            safe_multiplier = float(multiplier)
+        except (TypeError, ValueError, OverflowError):
+            safe_multiplier = STALE_MULTIPLIER
+        if not isfinite(safe_multiplier):
+            safe_multiplier = STALE_MULTIPLIER
+        safe_multiplier = min(max(safe_multiplier, 1.5), 10.0)
+        return timedelta(seconds=expected * safe_multiplier)
 
     def reset(self, entity_id: str | None = None) -> None:
         """Reset one entity or all learned profiles."""
@@ -220,6 +231,7 @@ def collect_adaptive_stale(
     excluded_entities: set[str],
     learner: FreshnessLearner,
     now: datetime,
+    threshold_multiplier: float = STALE_MULTIPLIER,
 ) -> tuple[list[dict], dict[str, dict]]:
     """Return stale observations and per-entity learning status."""
     stale: list[dict] = []
@@ -228,7 +240,7 @@ def collect_adaptive_stale(
     for entity_id in sorted(selected_entities - excluded_entities):
         state = state_by_id.get(entity_id)
         expected = learner.expected_interval(entity_id)
-        threshold = learner.stale_after(entity_id)
+        threshold = learner.stale_after(entity_id, threshold_multiplier)
         profile_status = (
             "missing"
             if state is None
