@@ -13,7 +13,7 @@ Early development backend foundation, not a stable release. The implemented path
 - During initial learning and after training, extreme gaps/outliers are rejected as cadence samples; the last-report baseline still advances so learning can recover.
 - After training, a bounded exponential moving average (alpha 0.2) adapts gradually. Individual intervals are clamped to 0.5x–2x the current estimate.
 - Intervals over 30 days are not cadence samples. Non-increasing and timezone-naive timestamps are ignored.
-- Initial stale threshold is three times learned cadence. This is a conservative initial policy, not a validated universal threshold.
+- Initial stale threshold is three times learned cadence. A graphical global multiplier (1.5–10x, default 3x) provides the manual adjustment side of the hybrid model. Very large cadence changes are treated as outliers; users can reset the selected profile after intentional sensor reconfiguration.
 - Profiles are persisted with Home Assistant Store, restored on startup, coalesced after event bursts and flushed on unload.
 - The stale sensor exposes learning/monitoring state, sample count, expected interval and threshold. Learning entities are not flagged stale and do not contribute full freshness coverage.
 - Manual service resets one selected profile or all selected profiles. Removing an entity from selection prunes its profile. Disabling freshness suspends event collection while preserving existing profiles.

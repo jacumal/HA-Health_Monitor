@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from datetime import datetime, timedelta
+from math import isfinite
 from statistics import median
 
 from homeassistant.core import State

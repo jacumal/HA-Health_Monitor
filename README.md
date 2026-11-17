@@ -32,7 +32,7 @@ HA Health Monitor is an open-source Home Assistant integration for local observa
 - Initial cadence is the median of the first five intervals.
 - Extreme intervals are ignored as cadence samples so temporary outages do not poison learning.
 - Once ready, cadence adapts gradually; individual intervals are bounded to reduce outlier influence.
-- Initial stale threshold: three times the learned cadence. This is an engineering default that still requires validation against real installations.
+- Initial stale threshold: three times the learned cadence. The graphical options include a global tolerance multiplier (1.5–10x) so users can manually tune sensitivity. Large cadence changes or a sensor reconfiguration can be handled with the explicit learning reset service.
 - Profiles survive restarts and are pruned when entities are removed from the selected list.
 - Learning is local and deterministic; no external AI service is required.
 

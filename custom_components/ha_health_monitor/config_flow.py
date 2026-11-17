@@ -10,12 +10,16 @@ from homeassistant.helpers import selector
 from .const import (
     CONF_EXCLUDED_ENTITIES,
     CONF_FRESHNESS_ENTITIES,
+    CONF_FRESHNESS_MULTIPLIER,
     CONF_MONITOR_FRESHNESS,
     CONF_SCAN_INTERVAL,
+    DEFAULT_FRESHNESS_MULTIPLIER,
     DEFAULT_MONITOR_FRESHNESS,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    MAX_FRESHNESS_MULTIPLIER,
     MAX_SCAN_INTERVAL,
+    MIN_FRESHNESS_MULTIPLIER,
     MIN_SCAN_INTERVAL,
 )
 
@@ -85,6 +89,19 @@ class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
                 ): selector.EntitySelector(
                     selector.EntitySelectorConfig(
                         domain=["sensor", "binary_sensor"], multiple=True
+                    )
+                ),
+                vol.Optional(
+                    CONF_FRESHNESS_MULTIPLIER,
+                    default=options.get(
+                        CONF_FRESHNESS_MULTIPLIER, DEFAULT_FRESHNESS_MULTIPLIER
+                    ),
+                ): selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        min=MIN_FRESHNESS_MULTIPLIER,
+                        max=MAX_FRESHNESS_MULTIPLIER,
+                        step=0.5,
+                        mode=selector.NumberSelectorMode.BOX,
                     )
                 ),
             }

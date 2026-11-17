@@ -137,6 +137,7 @@ class HealthMonitorSensor(CoordinatorEntity[HealthMonitorCoordinator], SensorEnt
             return {
                 "entities": data["stale_entities"],
                 "freshness_enabled": data["freshness_enabled"],
+                "threshold_multiplier": data["freshness_threshold_multiplier"],
                 "selected_entity_count": data["freshness_entity_count"],
                 "learning_entity_count": data["freshness_learning_count"],
                 "monitoring_entity_count": data["freshness_monitoring_count"],

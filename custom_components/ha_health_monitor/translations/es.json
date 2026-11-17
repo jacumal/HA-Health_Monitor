@@ -19,13 +19,15 @@
           "scan_interval_minutes": "Intervalo de análisis",
           "excluded_entities": "Entidades excluidas",
           "monitor_freshness": "Activar monitorización adaptativa de actualizaciones",
-          "freshness_entities": "Entidades que se aprenderán y monitorizarán"
+          "freshness_entities": "Entidades que se aprenderán y monitorizarán",
+          "freshness_threshold_multiplier": "Multiplicador de tolerancia de actualización"
         },
         "data_description": {
           "scan_interval_minutes": "Frecuencia con la que se revisan los estados de Home Assistant.",
           "excluded_entities": "Estas entidades se excluyen de los controles de disponibilidad y actualización.",
           "monitor_freshness": "Desactivado por defecto. Solo se observan las entidades seleccionadas. Cada una aprende su propia frecuencia de actualización a partir de comunicaciones reales.",
-          "freshness_entities": "Selecciona entidades de tipo sensor o sensor binario que deberían comunicar regularmente. Cada una necesita al menos cinco intervalos válidos antes de detectar retrasos. El aprendizaje depende de la frecuencia de cada entidad."
+          "freshness_entities": "Selecciona entidades de tipo sensor o sensor binario que deberían comunicar regularmente. Cada una necesita al menos cinco intervalos válidos antes de detectar retrasos. El aprendizaje depende de la frecuencia de cada entidad.",
+          "freshness_threshold_multiplier": "Tolerancia global manual aplicada a la frecuencia aprendida de cada entidad. Los valores altos son más permisivos y retrasan los avisos; el valor predeterminado es 3,0."
         }
       }
     }

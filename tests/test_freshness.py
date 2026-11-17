@@ -158,3 +158,27 @@ def test_missing_and_unknown_entities_are_not_counted_as_monitoring():
     assert profiles["sensor.unknown"]["status"] == "paused"
     assert profiles["sensor.missing"]["status"] == "missing"
     assert profiles["sensor.ready"]["status"] == "monitoring"
+
+
+def test_manual_threshold_multiplier_changes_stale_sensitivity():
+    now = datetime(2026, 11, 17, 10, 0, tzinfo=UTC)
+    learner, _ = trained_learner()
+    state = make_state(
+        "sensor.temperature", "21", now - timedelta(minutes=20)
+    )
+    default_stale, _ = collect_adaptive_stale(
+        [state], {"sensor.temperature"}, set(), learner, now
+    )
+    tolerant_stale, _ = collect_adaptive_stale(
+        [state],
+        {"sensor.temperature"},
+        set(),
+        learner,
+        now,
+        threshold_multiplier=5.0,
+    )
+    assert len(default_stale) == 1
+    assert tolerant_stale == []
+    assert learner.stale_after("sensor.temperature", multiplier=5.0) == (
+        timedelta(minutes=25)
+    )

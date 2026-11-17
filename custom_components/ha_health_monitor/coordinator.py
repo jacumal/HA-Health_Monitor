@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
+from math import isfinite
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
@@ -18,8 +19,10 @@ from homeassistant.util import dt as dt_util
 from .const import (
     CONF_EXCLUDED_ENTITIES,
     CONF_FRESHNESS_ENTITIES,
+    CONF_FRESHNESS_MULTIPLIER,
     CONF_MONITOR_FRESHNESS,
     CONF_SCAN_INTERVAL,
+    DEFAULT_FRESHNESS_MULTIPLIER,
     DEFAULT_MONITOR_FRESHNESS,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
@@ -174,12 +177,28 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
         excluded = set(self.options.get(CONF_EXCLUDED_ENTITIES, []))
         selected = self.selected_freshness_entities
         states = self.hass.states.async_all()
+        raw_multiplier = self.options.get(
+            CONF_FRESHNESS_MULTIPLIER, DEFAULT_FRESHNESS_MULTIPLIER
+        )
+        try:
+            threshold_multiplier = float(raw_multiplier)
+        except (TypeError, ValueError, OverflowError):
+            threshold_multiplier = DEFAULT_FRESHNESS_MULTIPLIER
+        if not isfinite(threshold_multiplier):
+            threshold_multiplier = DEFAULT_FRESHNESS_MULTIPLIER
+        threshold_multiplier = min(max(threshold_multiplier, 1.5), 10.0)
+
         try:
             unavailable = collect_unavailable(
                 states, excluded, now, AVAILABILITY_GRACE_PERIOD
             )
             stale, profiles = collect_adaptive_stale(
-                states, selected, excluded, self.learner, now
+                states,
+                selected,
+                excluded,
+                self.learner,
+                now,
+                threshold_multiplier,
             )
         except (AttributeError, TypeError, ValueError) as err:
             raise UpdateFailed(
@@ -225,6 +244,7 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             "availability_assessed_count": availability_assessed_count,
             "unknown_entity_count": eligible_count - availability_assessed_count,
             "freshness_enabled": freshness_enabled,
+            "freshness_threshold_multiplier": threshold_multiplier,
             "freshness_entity_count": len(selected),
             "freshness_learning_count": sum(
                 profile["status"] == "learning" for profile in profiles.values()
