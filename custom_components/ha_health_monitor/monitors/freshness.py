@@ -15,7 +15,7 @@ def collect_stale(
     now: datetime,
     stale_after: timedelta,
 ) -> list[dict]:
-    """Return selected entities whose state has not changed within the threshold."""
+    """Return selected entities that have not reported a state update within the threshold."""
     stale = []
     for state in states:
         if (
@@ -24,14 +24,15 @@ def collect_stale(
             or state.state in ("unknown", "unavailable")
         ):
             continue
-        age = now - state.last_updated
+        last_reported = state.last_reported
+        age = now - last_reported
         if age <= stale_after:
             continue
         stale.append(
             {
                 "entity_id": state.entity_id,
                 "name": state.name,
-                "last_updated": state.last_updated.isoformat(),
+                "last_reported": last_reported.isoformat(),
                 "age_seconds": int(age.total_seconds()),
                 "threshold_seconds": int(stale_after.total_seconds()),
             }
