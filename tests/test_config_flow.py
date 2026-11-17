@@ -1,7 +1,7 @@
 """Tests for the HA Health Monitor config flow."""
 
-from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.ha_health_monitor.const import DOMAIN
 
