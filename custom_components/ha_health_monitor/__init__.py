@@ -8,7 +8,6 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.update_coordinator import UpdateFailed
-
 import voluptuous as vol
 
 from .const import DOMAIN, SERVICE_RESET_FRESHNESS_LEARNING, SERVICE_SCAN_NOW
