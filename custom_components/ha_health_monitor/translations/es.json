@@ -27,7 +27,7 @@
           "excluded_entities": "Estas entidades se excluyen de los controles de disponibilidad y actualización.",
           "monitor_freshness": "Desactivado por defecto para evitar falsos positivos en entidades que solo cambian cuando varía su valor.",
           "freshness_entities": "Selecciona únicamente entidades que deberían actualizarse regularmente.",
-          "freshness_threshold_minutes": "Se genera una incidencia cuando una entidad seleccionada no cambia durante más tiempo del indicado."
+          "freshness_threshold_minutes": "Se genera una incidencia cuando una entidad seleccionada no comunica una actualización de estado durante más tiempo del indicado."
         }
       }
     }
