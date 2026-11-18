@@ -8,11 +8,37 @@ from datetime import datetime, timedelta
 from homeassistant.core import State
 
 
+def collect_device_metadata(
+    entity_registry_entries: Iterable,
+    device_registry_entries: Iterable,
+) -> dict[str, dict]:
+    """Map entities to their registered device and integration metadata."""
+    devices = {device.id: device for device in device_registry_entries}
+    metadata = {}
+    for entity in entity_registry_entries:
+        device_id = getattr(entity, "device_id", None)
+        if device_id is None:
+            continue
+        device = devices.get(device_id)
+        if device is None:
+            continue
+        metadata[entity.entity_id] = {
+            "device_id": device.id,
+            "device_name": getattr(device, "name_by_user", None)
+            or getattr(device, "name", None),
+            "manufacturer": getattr(device, "manufacturer", None),
+            "model": getattr(device, "model", None),
+            "platform": getattr(entity, "platform", None),
+        }
+    return metadata
+
+
 def collect_unavailable(
     states: Iterable[State],
     excluded_entities: set[str],
     now: datetime,
     grace_period: timedelta,
+    device_metadata: dict[str, dict] | None = None,
 ) -> list[dict]:
     """Return entities that have remained unavailable beyond the grace period."""
     unavailable = []
@@ -28,6 +54,7 @@ def collect_unavailable(
                 "name": state.name,
                 "last_changed": state.last_changed.isoformat(),
                 "duration_seconds": int(duration.total_seconds()),
+                **(device_metadata or {}).get(state.entity_id, {}),
             }
         )
     return unavailable
