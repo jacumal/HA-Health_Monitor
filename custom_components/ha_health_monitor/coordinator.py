@@ -30,6 +30,7 @@ from .const import (
 from .incident_engine import (
     build_observations,
     correlate_incidents,
+    normalize_incident_history,
     reconcile_incidents,
 )
 from .monitors.automations import collect_automation_health
@@ -93,16 +94,21 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
         freshness_data = await self._freshness_store.async_load()
         incident_data = await self._incident_store.async_load()
         self.learner = FreshnessLearner.from_storage(freshness_data)
-        self._incident_history = (
-            incident_data.get("incidents", [])
+        raw_incidents = (
+            incident_data.get("incidents")
             if isinstance(incident_data, dict)
-            and isinstance(incident_data.get("incidents", []), list)
-            else []
+            else None
         )
+        self._incident_history = normalize_incident_history(raw_incidents)
+        if self._incident_history != raw_incidents:
+            await self._incident_store.async_save(
+                {"incidents": self._incident_history}
+            )
 
         configured = self.configured_freshness_entities
         selected = self.selected_freshness_entities
         changed = self.learner.retain_entities(configured)
+        changed = self.learner.export() != freshness_data or changed
         for entity_id in selected:
             state = self.hass.states.get(entity_id)
             if state is not None and state.state not in ("unknown", "unavailable"):
