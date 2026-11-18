@@ -80,8 +80,6 @@ def calculate_health_score(
                 else base_points[category] / 2
             )
             points = min(severity_points, remaining)
-            if points <= 0:
-                continue
             remaining -= points
             rule_suffix = issue.get("rule_id", "finding").split(".")[-1]
             deduction = {
@@ -91,7 +89,11 @@ def calculate_health_score(
                 "entity_id": issue.get("entity_id"),
                 "target": issue.get("target"),
                 "points": round(points, 2),
-                "reason": "active_monitor_finding",
+                "reason": (
+                    "active_monitor_finding"
+                    if points > 0
+                    else "category_deduction_cap_reached"
+                ),
                 "correlation_key": issue.get("correlation_key"),
             }
             deductions.append(deduction)
