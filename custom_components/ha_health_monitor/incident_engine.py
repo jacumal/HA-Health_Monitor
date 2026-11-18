@@ -69,7 +69,7 @@ def build_observations(
     for item in failed_integrations or []:
         observations.append(
             _make(
-                "integration.setup_failed",
+                item.get("rule_id", "integration.setup_failed"),
                 "integrations",
                 item["entry_id"],
                 "error",
