@@ -219,10 +219,19 @@ def normalize_incident_history(data: Any) -> list[dict[str, Any]]:
         }
         existing = normalized.get(issue_id)
         if existing is not None:
-            existing_at = datetime.fromisoformat(existing["last_seen"])
-            if (last_at, status == "active") <= (
-                existing_at,
-                existing["status"] == "active",
+            existing_event_at = datetime.fromisoformat(
+                existing["resolved_at"]
+                if existing["status"] == "resolved"
+                else existing["last_seen"]
+            )
+            candidate_event_at = (
+                datetime.fromisoformat(resolved_at)
+                if status == "resolved"
+                else last_at
+            )
+            if (candidate_event_at, status == "resolved") <= (
+                existing_event_at,
+                existing["status"] == "resolved",
             ):
                 continue
         normalized[issue_id] = candidate
