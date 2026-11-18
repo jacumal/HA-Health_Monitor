@@ -67,3 +67,41 @@ def test_persistently_unavailable_automation_is_reported():
         result["unavailable_automations"][0]["entity_id"]
         == "automation.broken"
     )
+
+
+def test_integration_migration_and_unload_failures_are_reported():
+    entries = [
+        SimpleNamespace(
+            entry_id="migration",
+            domain="mqtt",
+            title="MQTT",
+            state="migration_error",
+        ),
+        SimpleNamespace(
+            entry_id="unload",
+            domain="zha",
+            title="ZHA",
+            state="failed_unload",
+        ),
+        SimpleNamespace(
+            entry_id="disabled",
+            domain="hue",
+            title="Hue",
+            state=ConfigEntryState.NOT_LOADED,
+        ),
+        SimpleNamespace(
+            entry_id="setting_up",
+            domain="esphome",
+            title="ESPHome",
+            state="setup_in_progress",
+        ),
+    ]
+    result = collect_integration_health(entries)
+    assert result["eligible_count"] == 4
+    assert result["assessed_count"] == 3
+    assert result["failed_count"] == 2
+    assert result["retrying_count"] == 1
+    assert {item["rule_id"] for item in result["failed_entries"]} == {
+        "integration.migration_failed",
+        "integration.unload_failed",
+    }
