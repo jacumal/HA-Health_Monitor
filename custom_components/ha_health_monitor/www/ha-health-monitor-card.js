@@ -33,8 +33,8 @@ class HaHealthMonitorCard extends HTMLElement{
  let head="<header><div class='brand'><span class='brandmark'><ha-icon icon='mdi:heart-pulse'></ha-icon></span><div><b>HA Health Monitor</b><small>"+this.t("subtitle")+"</small></div></div><span class='live'>● "+this.t("monitoring")+"</span></header>";
  let heading=view==="overview"?"":"<div class='viewheading'><small>"+this.t("module")+"</small><h2>"+this.t(view)+"</h2><button data-a='overview'>"+this.t("overview")+"</button></div>";
  let body=view==="overview"?this.overview():this.moduleView(view);
- let modal=this.issue&&this.cfg.issue_detail_mode!=="inline"?"<div class='overlay'><section class='dialog'><div class='dialoghead'><div><small>"+this.t("details")+"</small><h3>"+X(this.issue.title||this.issue.message||this.issue.rule_id||this.issue.target||this.t("active_issues"))+"</h3></div><button class='close' data-a='close' aria-label='"+this.t("close")+"'>×</button></div>"+this.issuePanel(this.issue)+"</section></div>":"";
- let foot="<footer><span>HA Health Monitor <small>v0.1.0</small></span><button data-a='scan'>↻ "+this.t("scan_now")+"</button></footer>";
+ let modal=this.issue&&this.cfg.issue_detail_mode!=="inline"?"<div class='overlay'><section class='dialog' role='dialog' aria-modal='true'><div class='dialoghead'><div><small>"+this.t("details")+"</small><h3>"+X(this.issue.title||this.issue.message||this.issue.rule_id||this.issue.target||this.t("active_issues"))+"</h3></div><button class='close' data-a='close' aria-label='"+this.t("close")+"'>×</button></div>"+this.issuePanel(this.issue)+"</section></div>":"";
+ let foot="<footer><span>HA Health Monitor <small>v0.1.1</small></span><button data-a='scan'>↻ "+this.t("scan_now")+"</button></footer>";
  this.shadowRoot.innerHTML=this.css()+"<ha-card><div class='shell'>"+head+hero+heading+body+modal+foot+"</div></ha-card>";
  }
  color(s){return s===null?"var(--secondary-text-color)":s>=90?"var(--success-color,#299d70)":s>=70?"var(--warning-color,#c58b29)":"var(--error-color,#d95757)";}
