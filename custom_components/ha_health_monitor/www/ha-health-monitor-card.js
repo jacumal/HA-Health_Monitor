@@ -83,8 +83,10 @@ class HaHealthMonitorCard extends HTMLElement{
  getCardSize(){return this.cfg.density==="detailed"?7:4;}
 }
 // Register both names: the legacy class tag and the Lovelace YAML type.
-if(!customElements.get("ha-health-monitor-card"))customElements.define("ha-health-monitor-card",HaHealthMonitorCard);
 if(!customElements.get("ha-health-monitor"))customElements.define("ha-health-monitor",HaHealthMonitorCard);
+// CustomElementRegistry does not allow the same constructor under two names.
+// Keep the legacy tag as a distinct subclass so both names can be registered.
+if(!customElements.get("ha-health-monitor-card"))customElements.define("ha-health-monitor-card",class HaHealthMonitorLegacyCard extends HaHealthMonitorCard{});
 class HaHealthMonitorEditor extends HTMLElement{
  constructor(){super();this.attachShadow({mode:"open"});this.cfg=Object.assign({},D,{modules:Object.assign({},D.modules)});}
  setConfig(c){this.cfg=Object.assign({},D,c,{modules:Object.assign({},D.modules,c.modules||{})});this.render();}
