@@ -17,4 +17,5 @@ MIN_SCAN_INTERVAL = 1
 MAX_SCAN_INTERVAL = 60
 
 SERVICE_SCAN_NOW = "scan_now"
+SERVICE_SET_ENTITY_EXCLUDED = "set_entity_excluded"
 SERVICE_RESET_FRESHNESS_LEARNING = "reset_freshness_learning"
