@@ -54,21 +54,35 @@ class FreshnessLearner:
         intervals = profile.get("intervals", [])
         if not isinstance(intervals, list):
             intervals = []
-        valid_intervals = [
-            float(value)
-            for value in intervals
-            if isinstance(value, (int, float))
-            and 0 < value <= MAX_INTERVAL_SECONDS
-        ][-MAX_INTERVAL_SAMPLES:]
+        valid_intervals = []
+        for value in intervals:
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                continue
+            try:
+                interval = float(value)
+            except (OverflowError, ValueError):
+                continue
+            if isfinite(interval) and 0 < interval <= MAX_INTERVAL_SECONDS:
+                valid_intervals.append(interval)
+        valid_intervals = valid_intervals[-MAX_INTERVAL_SAMPLES:]
+
         expected = profile.get("expected_interval")
-        if (
-            not isinstance(expected, (int, float))
-            or not 0 < expected <= MAX_INTERVAL_SECONDS
-        ):
+        if isinstance(expected, bool) or not isinstance(expected, (int, float)):
             expected = None
+        else:
+            try:
+                expected = float(expected)
+            except (OverflowError, ValueError):
+                expected = None
+            if (
+                expected is not None
+                and (not isfinite(expected) or not 0 < expected <= MAX_INTERVAL_SECONDS)
+            ):
+                expected = None
         count = profile.get("sample_count", len(valid_intervals))
-        if not isinstance(count, int) or count < 0:
+        if isinstance(count, bool) or not isinstance(count, int) or count < 0:
             count = len(valid_intervals)
+        count = min(count, 10000)
         if expected is None and len(valid_intervals) >= MIN_INTERVAL_SAMPLES:
             expected = float(median(valid_intervals))
         return {
