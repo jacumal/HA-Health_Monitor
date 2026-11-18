@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 from custom_components.ha_health_monitor.monitors.availability import (
+    collect_disabled_entities,
     collect_unavailable,
 )
 
@@ -52,3 +53,33 @@ def test_unknown_and_excluded_entities_are_not_unavailable_issues():
     assert collect_unavailable(
         states, {"sensor.excluded"}, now, timedelta(minutes=2)
     ) == []
+
+
+def test_disabled_entities_are_listed_with_registry_metadata():
+    entries = [
+        SimpleNamespace(
+            entity_id="sensor.iphone_current_pace",
+            name=None,
+            original_name="Current Pace",
+            platform="mobile_app",
+            disabled_by=SimpleNamespace(value="user"),
+            entity_category=None,
+        ),
+        SimpleNamespace(
+            entity_id="sensor.active",
+            name="Active",
+            original_name=None,
+            platform="mqtt",
+            disabled_by=None,
+            entity_category=None,
+        ),
+    ]
+    result = collect_disabled_entities(entries)
+    assert len(result) == 1
+    assert result[0] == {
+        "entity_id": "sensor.iphone_current_pace",
+        "name": "Current Pace",
+        "platform": "mobile_app",
+        "disabled_by": "user",
+        "entity_category": None,
+    }
