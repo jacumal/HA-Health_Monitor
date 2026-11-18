@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import voluptuous as vol
+from homeassistant.components.http import StaticPathConfig
+from homeassistant.components.lovelace import LOVELACE_DATA
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
@@ -14,12 +18,39 @@ from .const import DOMAIN, SERVICE_RESET_FRESHNESS_LEARNING, SERVICE_SCAN_NOW
 from .coordinator import HealthMonitorCoordinator
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
+CARD_DIR = Path(__file__).parent / "www"
+CARD_URL = "/ha_health_monitor/ha-health-monitor-card.js?v=0.1.0"
 
 type HealthMonitorConfigEntry = ConfigEntry[HealthMonitorCoordinator]
 
 
+async def _async_register_card(hass: HomeAssistant) -> None:
+    """Serve and register the bundled Lovelace card."""
+    card_path = CARD_DIR / "ha-health-monitor-card.js"
+    if not card_path.is_file():
+        return
+    try:
+        await hass.http.async_register_static_paths(
+            [StaticPathConfig("/ha_health_monitor", str(CARD_DIR), False)]
+        )
+    except RuntimeError:
+        # Static path can already exist after an integration reload.
+        pass
+    lovelace = hass.data.get(LOVELACE_DATA)
+    if lovelace is None:
+        return
+    resources = getattr(lovelace, "resources", None)
+    if resources is None or not hasattr(resources, "async_create_item"):
+        return
+    await resources.async_get_info()
+    if any(item.get("url") == CARD_URL for item in resources.async_items()):
+        return
+    await resources.async_create_item({"res_type": "module", "url": CARD_URL})
+
+
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Set up the integration domain."""
+    """Set up integration domain and bundled Lovelace resource."""
+    await _async_register_card(hass)
     return True
 
 
