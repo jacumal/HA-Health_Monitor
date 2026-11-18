@@ -4,6 +4,8 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 from homeassistant.core import Event
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.entity_registry import RegistryEntryDisabler
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.ha_health_monitor.const import (
@@ -179,3 +181,25 @@ async def test_shutdown_flushes_freshness_observations_to_storage(hass):
     assert restored.export()["entities"]["sensor.selected"]["last_reported"] == (
         next_report.isoformat()
     )
+
+
+async def test_disabled_entities_are_excluded_from_freshness_selection(hass):
+    registry = er.async_get(hass)
+    registry.async_get_or_create(
+        "sensor",
+        "mobile_app",
+        "disabled_unique",
+        suggested_object_id="disabled_sensor",
+        disabled_by=RegistryEntryDisabler.USER,
+    )
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={},
+        options={
+            CONF_MONITOR_FRESHNESS: True,
+            CONF_FRESHNESS_ENTITIES: ["sensor.disabled_sensor", "sensor.enabled_sensor"],
+        },
+    )
+    coordinator = HealthMonitorCoordinator(hass, entry)
+    assert coordinator.disabled_entity_ids == {"sensor.disabled_sensor"}
+    assert coordinator.configured_freshness_entities == {"sensor.enabled_sensor"}
