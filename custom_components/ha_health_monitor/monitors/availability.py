@@ -31,3 +31,27 @@ def collect_unavailable(
             }
         )
     return unavailable
+
+
+def collect_disabled_entities(registry_entries: Iterable) -> list[dict]:
+    """Return registry entities explicitly disabled in Home Assistant."""
+    disabled = []
+    for entry in registry_entries:
+        disabled_by = getattr(entry, "disabled_by", None)
+        if disabled_by is None:
+            continue
+        disabled.append(
+            {
+                "entity_id": entry.entity_id,
+                "name": getattr(entry, "name", None)
+                or getattr(entry, "original_name", None)
+                or entry.entity_id,
+                "platform": getattr(entry, "platform", None),
+                "disabled_by": getattr(disabled_by, "value", str(disabled_by)),
+                "entity_category": getattr(
+                    getattr(entry, "entity_category", None), "value",
+                    getattr(entry, "entity_category", None),
+                ),
+            }
+        )
+    return sorted(disabled, key=lambda item: item["entity_id"])
