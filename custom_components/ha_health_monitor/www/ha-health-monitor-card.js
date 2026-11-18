@@ -24,6 +24,7 @@ class HaHealthMonitorCard extends HTMLElement{
  count(k){return N(this.val(k))||0;}
  sev(i){return ["error","warning","info"].includes(i.severity)?i.severity:"warning";}
  category(k){return this.t(k==="availability"?"unavailable":k);}
+ issueTitle(i){let names={"availability.unavailable":this.lang==="es"?"Entidad no disponible":"Entity unavailable","freshness.stale":this.lang==="es"?"Sensor sin actualizaciones":"Sensor not updating","integration.setup_failed":this.lang==="es"?"Error de configuración de integración":"Integration setup failed","integration.migration_failed":this.lang==="es"?"Error de migración de integración":"Integration migration failed","integration.unload_failed":this.lang==="es"?"Error al descargar integración":"Integration unload failed","automation.unavailable":this.lang==="es"?"Automatización no disponible":"Automation unavailable"};return i.title||i.message||names[i.rule_id]||i.rule_id||i.target||this.t("active_issues");}
  connectedCallback(){this.shadowRoot.addEventListener("click",e=>{let b=e.target.closest("[data-a]");if(!b)return;let a=b.dataset.a;if(a==="module"){this.cfg.view=b.dataset.v;this.render();}if(a==="overview"){this.cfg.view="overview";this.render();}if(a==="breakdown"){this.expanded=!this.expanded;this.render();}if(a==="issue"){this.issue=this.issues().find(x=>x.issue_id===b.dataset.id)||null;this.render();}if(a==="close"){this.issue=null;this.render();}if(a==="all"){this.all=true;this.render();}if(a==="scan")this._hass.callService("ha_health_monitor","scan_now",{});if(a==="entity"&&b.dataset.entity)this._hass.moreInfo(b.dataset.entity);});}
  render(){
  if(!this._hass)return;let view=MOD.includes(this.cfg.view)?this.cfg.view:"overview";
@@ -33,7 +34,7 @@ class HaHealthMonitorCard extends HTMLElement{
  let head="<header><div class='brand'><span class='brandmark'><ha-icon icon='mdi:heart-pulse'></ha-icon></span><div><b>HA Health Monitor</b><small>"+this.t("subtitle")+"</small></div></div><span class='live'>● "+this.t("monitoring")+"</span></header>";
  let heading=view==="overview"?"":"<div class='viewheading'><small>"+this.t("module")+"</small><h2>"+this.t(view)+"</h2><button data-a='overview'>"+this.t("overview")+"</button></div>";
  let body=view==="overview"?this.overview():this.moduleView(view);
- let modal=this.issue&&this.cfg.issue_detail_mode!=="inline"?"<div class='overlay'><section class='dialog' role='dialog' aria-modal='true'><div class='dialoghead'><div><small>"+this.t("details")+"</small><h3>"+X(this.issue.title||this.issue.message||this.issue.rule_id||this.issue.target||this.t("active_issues"))+"</h3></div><button class='close' data-a='close' aria-label='"+this.t("close")+"'>×</button></div>"+this.issuePanel(this.issue)+"</section></div>":"";
+ let modal=this.issue&&this.cfg.issue_detail_mode!=="inline"?"<div class='overlay'><section class='dialog' role='dialog' aria-modal='true'><div class='dialoghead'><div><small>"+this.t("details")+"</small><h3>"+X(this.issueTitle(this.issue))+"</h3></div><button class='close' data-a='close' aria-label='"+this.t("close")+"'>×</button></div>"+this.issuePanel(this.issue)+"</section></div>":"";
  let foot="<footer><span>HA Health Monitor <small>v0.1.1</small></span><button data-a='scan'>↻ "+this.t("scan_now")+"</button></footer>";
  this.shadowRoot.innerHTML=this.css()+"<ha-card><div class='shell'>"+head+hero+heading+body+modal+foot+"</div></ha-card>";
  }
@@ -52,7 +53,7 @@ class HaHealthMonitorCard extends HTMLElement{
  }
  issueList(){
  let list=this.issues().sort((a,b)=>({error:0,warning:1,info:2}[this.sev(a)]-({error:0,warning:1,info:2}[this.sev(b)]))),shown=this.all?list:list.slice(0,this.cfg.max_issues);
- let rows=shown.map(i=>"<button class='issue' data-a='issue' data-id='"+X(i.issue_id)+"'><i class='sev "+this.sev(i)+"'></i><span><b>"+X(i.title||i.message||i.rule_id||i.target||this.t("active_issues"))+"</b><small>"+X(i.entity_id||i.target||"—")+"</small></span><time>"+this.date(i.first_seen)+"</time><ha-icon icon='mdi:chevron-right'></ha-icon></button>"+(this.issue&&this.cfg.issue_detail_mode==="inline"&&this.issue.issue_id===i.issue_id?this.issuePanel(i):"")).join("");
+ let rows=shown.map(i=>"<button class='issue' data-a='issue' data-id='"+X(i.issue_id)+"'><i class='sev "+this.sev(i)+"'></i><span><b>"+X(this.issueTitle(i))+"</b><small>"+X(i.entity_id||i.target||"—")+"</small></span><time>"+this.date(i.first_seen)+"</time><ha-icon icon='mdi:chevron-right'></ha-icon></button>"+(this.issue&&this.cfg.issue_detail_mode==="inline"&&this.issue.issue_id===i.issue_id?this.issuePanel(i):"")).join("");
  return "<section class='section'><div class='sectiontitle'><h3>"+this.t("active_issues")+"</h3><span class='count'>"+list.length+"</span></div>"+(list.length?rows:"<div class='emptyissue'><ha-icon icon='mdi:check-circle-outline'></ha-icon><div><b>"+this.t("no_issues")+"</b><small>"+this.t("no_issues_desc")+"</small></div></div>")+(list.length>shown.length?"<button class='more' data-a='all'>"+this.t("show_more")+" ("+list.length+")</button>":"")+"</section>";
  }
  issuePanel(i){
