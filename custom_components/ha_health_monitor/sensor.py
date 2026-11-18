@@ -40,6 +40,12 @@ ENTITY_DESCRIPTIONS = (
         icon="mdi:history",
     ),
     SensorEntityDescription(
+        key="disabled_entities",
+        translation_key="disabled_entities",
+        icon="mdi:eye-off-outline",
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    SensorEntityDescription(
         key="unavailable_entities",
         translation_key="unavailable_entities",
         icon="mdi:lan-disconnect",
@@ -148,6 +154,8 @@ class HealthMonitorSensor(CoordinatorEntity[HealthMonitorCoordinator], SensorEnt
             return data["automation_health"]
         if key == "incident_history":
             return {"incidents": data["incident_history"][-50:]}
+        if key == "disabled_entities":
+            return {"entities": data["disabled_entities"]}
         if key == "unavailable_entities":
             return {
                 "entities": data["unavailable_entities"],
