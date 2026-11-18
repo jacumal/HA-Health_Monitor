@@ -99,3 +99,35 @@ def test_warning_deductions_are_half_of_error_deductions():
     }
     assert deductions == {"error": 4.0, "warning": 2.0}
     assert result["categories"]["freshness"]["earned_points"] == 14
+
+
+
+def test_empty_enabled_domains_do_not_claim_full_coverage():
+    result = calculate_health_score(
+        [],
+        availability_eligible_count=0,
+        availability_assessed_count=0,
+        freshness_enabled=True,
+        selected_freshness_count=0,
+        freshness_monitoring_count=0,
+        integration_eligible_count=0,
+        integration_assessed_count=0,
+        automation_eligible_count=0,
+        automation_assessed_count=0,
+    )
+    assert result["score"] is None
+    assert result["status"] == "not_assessed"
+    assert result["coverage_percent"] == 0
+    assert result["unassessed_categories"] == [
+        "availability", "freshness", "integrations", "automations"
+    ]
+
+
+def test_empty_freshness_selection_is_not_full_coverage_when_enabled():
+    result = complete(
+        freshness_enabled=True,
+        selected_freshness_count=0,
+        freshness_monitoring_count=0,
+    )
+    assert result["categories"]["freshness"]["assessment"] == "not_assessed"
+    assert result["categories"]["freshness"]["coverage_percent"] == 0
