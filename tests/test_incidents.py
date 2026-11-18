@@ -105,3 +105,13 @@ def test_persisted_incident_history_rejects_invalid_timestamps_and_status():
     record["first_seen"] = "2026-11-17T10:00:00+00:00"
     record["status"] = "unknown"
     assert normalize_incident_history([record]) == []
+
+
+def test_persisted_incident_history_ignores_unhashable_enum_values():
+    from custom_components.ha_health_monitor.incident_engine import (
+        normalize_incident_history,
+    )
+
+    assert normalize_incident_history([
+        {"category": [], "status": {}, "severity": []},
+    ]) == []
