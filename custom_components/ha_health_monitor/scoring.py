@@ -14,7 +14,7 @@ CATEGORY_WEIGHTS = {
 
 
 def _coverage(eligible: int, assessed: int) -> float:
-    return min(max(assessed, 0) / eligible, 1.0) if eligible > 0 else 1.0
+    return min(max(assessed, 0) / eligible, 1.0) if eligible > 0 else 0.0
 
 
 def calculate_health_score(
