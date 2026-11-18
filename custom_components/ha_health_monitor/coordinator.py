@@ -8,6 +8,7 @@ from math import isfinite
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import (
     async_track_state_change_event,
     async_track_state_report_event,
@@ -34,7 +35,7 @@ from .incident_engine import (
     reconcile_incidents,
 )
 from .monitors.automations import collect_automation_health
-from .monitors.availability import collect_unavailable
+from .monitors.availability import collect_disabled_entities, collect_unavailable
 from .monitors.freshness import FreshnessLearner, collect_adaptive_stale
 from .monitors.integrations import collect_integration_health
 from .scoring import calculate_health_score
@@ -80,7 +81,17 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
         """Return selected entities after applying global exclusions."""
         selected = set(self.options.get(CONF_FRESHNESS_ENTITIES, []))
         excluded = set(self.options.get(CONF_EXCLUDED_ENTITIES, []))
-        return selected - excluded
+        return selected - excluded - self.disabled_entity_ids
+
+    @property
+    def disabled_entities(self) -> list[dict]:
+        """Return entities disabled in Home Assistant's entity registry."""
+        return collect_disabled_entities(er.async_get(self.hass).entities.values())
+
+    @property
+    def disabled_entity_ids(self) -> set[str]:
+        """Return entity IDs disabled in Home Assistant's entity registry."""
+        return {item["entity_id"] for item in self.disabled_entities}
 
     @property
     def selected_freshness_entities(self) -> set[str]:
@@ -187,6 +198,9 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
         """Build one consistent monitoring, incident and scoring snapshot."""
         now = dt_util.utcnow()
         excluded = set(self.options.get(CONF_EXCLUDED_ENTITIES, []))
+        disabled_entities = self.disabled_entities
+        disabled_ids = {item["entity_id"] for item in disabled_entities}
+        excluded |= disabled_ids
         selected = self.selected_freshness_entities
         states = self.hass.states.async_all()
         raw_multiplier = self.options.get(
@@ -266,6 +280,7 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
         return {
             "last_scan": now,
             "unavailable_entities": unavailable,
+            "disabled_entities": disabled_entities,
             "stale_entities": stale,
             "monitored_entity_count": eligible_count,
             "availability_assessed_count": availability_assessed_count,
