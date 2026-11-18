@@ -123,13 +123,17 @@ Only select entities expected to report regularly. Static, event-driven and batt
 ## Entities
 
 - `sensor.ha_health_monitor_health_score`
+- `sensor.ha_health_monitor_health_status`
 - `sensor.ha_health_monitor_active_incidents`
+- `sensor.ha_health_monitor_incident_history`
 - `sensor.ha_health_monitor_unavailable_entities`
 - `sensor.ha_health_monitor_stale_entities`
+- `sensor.ha_health_monitor_failed_integrations`
+- `sensor.ha_health_monitor_unavailable_automations`
 - `sensor.ha_health_monitor_last_scan`
 - `binary_sensor.ha_health_monitor_system_has_issues`
 
-The score sensor exposes coverage, status, category breakdown and traceable deductions. The incidents sensor exposes active incidents. The stale sensor exposes per-entity learning status and cadence. Integration and automation monitor summaries are also available in coordinator data for frontend use.
+The score sensor exposes coverage, status, category breakdown and traceable deductions. The incidents sensor exposes active incidents and correlation groups; the history sensor exposes the latest 50 historical records. The stale sensor exposes per-entity learning status and cadence. The integration and automation sensors expose their respective assessment counts and findings.
 
 ## Services
 
