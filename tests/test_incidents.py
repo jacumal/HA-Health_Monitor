@@ -115,3 +115,66 @@ def test_persisted_incident_history_ignores_unhashable_enum_values():
     assert normalize_incident_history([
         {"category": [], "status": {}, "severity": []},
     ]) == []
+
+
+
+def test_persisted_incident_history_rejects_impossible_timestamp_order():
+    from custom_components.ha_health_monitor.incident_engine import (
+        make_issue_id,
+        normalize_incident_history,
+    )
+
+    base = {
+        "issue_id": make_issue_id("freshness.stale", "sensor.temp"),
+        "rule_id": "freshness.stale",
+        "category": "freshness",
+        "target": "sensor.temp",
+        "severity": "warning",
+        "status": "resolved",
+        "first_seen": "2026-11-17T10:00:00+00:00",
+        "last_seen": "2026-11-17T10:05:00+00:00",
+        "resolved_at": "2026-11-17T10:10:00+00:00",
+    }
+    first_after_last = {
+        **base,
+        "first_seen": "2026-11-17T10:06:00+00:00",
+    }
+    resolved_before_last = {
+        **base,
+        "resolved_at": "2026-11-17T10:04:00+00:00",
+    }
+    assert normalize_incident_history(
+        [first_after_last, resolved_before_last]
+    ) == []
+
+
+def test_duplicate_persisted_incidents_keep_latest_lifecycle_record():
+    from custom_components.ha_health_monitor.incident_engine import (
+        make_issue_id,
+        normalize_incident_history,
+    )
+
+    issue_id = make_issue_id("freshness.stale", "sensor.temp")
+    older_active = {
+        "issue_id": issue_id,
+        "rule_id": "freshness.stale",
+        "category": "freshness",
+        "target": "sensor.temp",
+        "severity": "warning",
+        "status": "active",
+        "first_seen": "2026-11-17T10:00:00+00:00",
+        "last_seen": "2026-11-17T10:05:00+00:00",
+        "resolved_at": None,
+    }
+    newer_resolved = {
+        **older_active,
+        "status": "resolved",
+        "last_seen": "2026-11-17T10:10:00+00:00",
+        "resolved_at": "2026-11-17T10:15:00+00:00",
+    }
+
+    for records in ([older_active, newer_resolved], [newer_resolved, older_active]):
+        result = normalize_incident_history(records)
+        assert len(result) == 1
+        assert result[0]["status"] == "resolved"
+        assert result[0]["last_seen"] == newer_resolved["last_seen"]
