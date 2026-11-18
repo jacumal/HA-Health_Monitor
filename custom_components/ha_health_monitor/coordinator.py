@@ -281,6 +281,9 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             "last_scan": now,
             "unavailable_entities": unavailable,
             "disabled_entities": disabled_entities,
+            "excluded_entities": sorted(
+                self.options.get(CONF_EXCLUDED_ENTITIES, [])
+            ),
             "stale_entities": stale,
             "monitored_entity_count": eligible_count,
             "availability_assessed_count": availability_assessed_count,
