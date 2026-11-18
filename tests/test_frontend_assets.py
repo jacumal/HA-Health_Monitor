@@ -13,6 +13,8 @@ def test_bundled_card_registers_card_and_editor():
     source = CARD.read_text()
     assert 'customElements.define("ha-health-monitor-card"' in source
     assert 'customElements.define("ha-health-monitor-editor"' in source
+    assert 'customElements.define("ha-health-monitor",HaHealthMonitorCard)' in source
+    assert "class HaHealthMonitorLegacyCard extends HaHealthMonitorCard" in source
     assert "static getConfigElement()" in source
     assert 'type:"ha-health-monitor"' in source
 
