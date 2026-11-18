@@ -12,3 +12,20 @@ reset_freshness_learning:
       selector:
         entity:
           multiple: false
+
+set_entity_excluded:
+  name: Set entity monitoring exclusion
+  description: Include or exclude one entity from HA Health Monitor.
+  fields:
+    entity_id:
+      name: Entity
+      required: true
+      selector:
+        entity:
+          multiple: false
+    excluded:
+      name: Excluded
+      description: Set true to omit the entity from monitoring, or false to include it again.
+      required: true
+      selector:
+        boolean:
