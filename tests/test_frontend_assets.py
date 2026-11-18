@@ -1,12 +1,19 @@
 from pathlib import Path
 
-CARD = Path(__file__).parents[1] / "custom_components" / "ha_health_monitor" / "www" / "ha-health-monitor-card.js"
+CARD = (
+    Path(__file__).parents[1]
+    / "custom_components"
+    / "ha_health_monitor"
+    / "www"
+    / "ha-health-monitor-card.js"
+)
 
 
 def test_bundled_card_registers_card_and_editor():
     source = CARD.read_text()
     assert 'customElements.define("ha-health-monitor-card"' in source
     assert 'customElements.define("ha-health-monitor-editor"' in source
+    assert "static getConfigElement()" in source
     assert 'type:"ha-health-monitor"' in source
 
 
