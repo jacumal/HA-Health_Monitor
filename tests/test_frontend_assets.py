@@ -51,3 +51,5 @@ def test_card_supports_reversible_manual_entity_exclusions():
     assert 'data-a=\'exclude\'' in source
     assert "manual_exclusions" in source
     assert "entityPanel" in source
+    assert "data-a='more-info'" in source
+    assert 'new CustomEvent("hass-more-info"' in source
