@@ -6,7 +6,7 @@ HA Health Monitor is an open-source Home Assistant integration for local observa
 
 > Requires Home Assistant 2024.11 or newer.
 >
-> **Development status:** early development (0.1.0). The four backend monitor domains, incident lifecycle, bounded persistence and coverage-aware Health Score are implemented and covered by automated CI. The Lovelace Hybrid card and real-installation validation are still pending. This is not yet a stable release.
+> **Development status:** early development (0.1.0). The four backend monitor domains, incident lifecycle, bounded persistence and coverage-aware Health Score are implemented and covered by automated CI. The first bundled Hybrid Lovelace card is implemented; CI and real-installation validation are in progress. This is not yet a stable release.
 
 ## Implemented backend
 
@@ -96,8 +96,9 @@ Errors deduct more points than warnings. Deductions are capped within each categ
 - Automation trace analysis and deeper automation diagnostics are not implemented.
 - Correlation is explicit-key grouping, not root-cause inference.
 - Acknowledgements, guided remediation and automatic verification of fixes are not implemented.
-- The Hybrid Lovelace card is planned **inside this same repository and integration**, not as a separate companion package.
-- Real HA OS validation, frontend validation and release/HACS readiness are still pending.
+- The first Hybrid Lovelace card is bundled **inside this same repository and integration**. Its initial version provides overview and module views, score breakdown, issue details, a visual editor, responsive styling and English/Spanish UI strings.
+- Historical charts, richer evidence-backed recommendations and deeper diagnosis views are not exposed yet because the backend does not currently provide the required history/diagnostic data.
+- Real HA OS validation, interaction/accessibility review and release/HACS readiness are still pending.
 
 ## Installation (development)
 
@@ -144,7 +145,7 @@ The score sensor exposes coverage, status, category breakdown and traceable dedu
 
 The product is being built around five pillars: reliable diagnostics, a polished responsive interface, UI-first configuration, an original Hybrid Lovelace card and internationalization from the beginning (English and Spanish initially).
 
-The card will ship with the integration in this repository, following the bundled-resource approach used by the AEMET Alertas project. It will provide an overview plus independent modules, explanatory score details and a visual editor. It will not depend on Bubble Card or copy third-party code/assets.
+The first card version ships with the integration in this repository. It provides an overview plus independent module views, score explanation, issue details and a visual editor. The design combines Apple-inspired visual hierarchy with Bubble Card-inspired modular interactions, without depending on Bubble Card or copying third-party code/assets.
 
 See [PRODUCT_PILLARS.md](docs/PRODUCT_PILLARS.md), [ARCHITECTURE.md](docs/ARCHITECTURE.md), [UI_PROTOTYPE.md](docs/UI_PROTOTYPE.md) and [ROADMAP.md](docs/ROADMAP.md).
 
