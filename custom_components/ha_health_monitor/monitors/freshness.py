@@ -66,6 +66,11 @@ class FreshnessLearner:
                 valid_intervals.append(interval)
         valid_intervals = valid_intervals[-MAX_INTERVAL_SAMPLES:]
 
+        count = profile.get("sample_count", len(valid_intervals))
+        if isinstance(count, bool) or not isinstance(count, int) or count < 0:
+            count = len(valid_intervals)
+        count = min(max(count, len(valid_intervals)), 10000)
+
         expected = profile.get("expected_interval")
         if isinstance(expected, bool) or not isinstance(expected, (int, float)):
             expected = None
@@ -79,11 +84,11 @@ class FreshnessLearner:
                 and (not isfinite(expected) or not 0 < expected <= MAX_INTERVAL_SECONDS)
             ):
                 expected = None
-        count = profile.get("sample_count", len(valid_intervals))
-        if isinstance(count, bool) or not isinstance(count, int) or count < 0:
-            count = len(valid_intervals)
-        count = min(count, 10000)
-        if expected is None and len(valid_intervals) >= MIN_INTERVAL_SAMPLES:
+        # A stored estimate is only trusted when the profile retains the
+        # minimum evidence needed to establish a cadence.
+        if count < MIN_INTERVAL_SAMPLES or len(valid_intervals) < MIN_INTERVAL_SAMPLES:
+            expected = None
+        elif expected is None:
             expected = float(median(valid_intervals))
         return {
             "last_reported": last_reported,
