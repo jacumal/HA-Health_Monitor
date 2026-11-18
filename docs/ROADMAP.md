@@ -8,7 +8,7 @@ Every phase must preserve the five non-negotiable pillars: real diagnostic usefu
 
 - [x] Confirm Hybrid visual direction and overview + independent module cards.
 - [x] Define UI-first setup, product pillars and English/Spanish internationalization.
-- [ ] Review and freeze the interaction prototype before frontend implementation.
+- [x] Review and freeze the interaction prototype before frontend implementation.
 
 ## Phase 1 — Backend foundations
 
@@ -38,15 +38,16 @@ Every phase must preserve the five non-negotiable pillars: real diagnostic usefu
 
 The card is part of this repository and integration. It will not be a separate companion package.
 
-- [ ] Review and freeze the interaction prototype.
-- [ ] Add the integration-bundled `www/` assets and frontend resource registration.
-- [ ] Build the Hybrid overview card and independent monitor modules.
-- [ ] Explain Health Score, coverage, category breakdown and deductions.
-- [ ] Add incident list, detail view, correlation groups and resolution guidance.
-- [ ] Add a graphical card editor with compact/detailed display modes and sensible defaults.
-- [ ] Add period controls, charts, module filters and recent-issue views where useful.
-- [ ] English/Spanish parity, responsive light/dark themes, keyboard support and accessibility.
-- [ ] Frontend tests and validation on mobile, tablet and desktop dashboards.
+- [x] Review and freeze the interaction prototype.
+- [x] Add the integration-bundled `www/` assets and frontend resource registration.
+- [x] Build the Hybrid overview card and independent monitor modules.
+- [x] Explain Health Score, coverage, category breakdown and deductions.
+- [x] Add incident list and detail view with available backend evidence.
+- [x] Add a graphical card editor with compact/detailed display modes and sensible defaults.
+- [x] Add English/Spanish UI strings and responsive light/dark styling.
+- [ ] Add period controls and charts when the backend exposes valid historical samples.
+- [ ] Complete keyboard/accessibility review and mobile, tablet and desktop dashboard validation.
+- [ ] Validate frontend resource registration and interactions on a real HA OS installation.
 
 ## Phase 4 — Release readiness
 
