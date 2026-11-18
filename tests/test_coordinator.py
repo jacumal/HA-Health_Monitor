@@ -206,3 +206,20 @@ async def test_disabled_entities_are_excluded_from_freshness_selection(hass):
     coordinator = HealthMonitorCoordinator(hass, entry)
     assert coordinator.disabled_entity_ids == {"sensor.disabled_sensor"}
     assert coordinator.configured_freshness_entities == {"sensor.enabled_sensor"}
+
+
+
+async def test_manual_exclusions_are_published_and_excluded_from_availability(hass):
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={},
+        options={CONF_EXCLUDED_ENTITIES: ["sensor.ignored"]},
+    )
+    hass.states.async_set("sensor.ignored", "unavailable")
+    hass.states.async_set("sensor.monitored", "unavailable")
+    coordinator = HealthMonitorCoordinator(hass, entry)
+    data = await coordinator._async_update_data()
+    assert data["excluded_entities"] == ["sensor.ignored"]
+    assert [item["entity_id"] for item in data["unavailable_entities"]] == [
+        "sensor.monitored"
+    ]
