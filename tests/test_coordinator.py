@@ -197,7 +197,10 @@ async def test_disabled_entities_are_excluded_from_freshness_selection(hass):
         data={},
         options={
             CONF_MONITOR_FRESHNESS: True,
-            CONF_FRESHNESS_ENTITIES: ["sensor.disabled_sensor", "sensor.enabled_sensor"],
+            CONF_FRESHNESS_ENTITIES: [
+                "sensor.disabled_sensor",
+                "sensor.enabled_sensor",
+            ],
         },
     )
     coordinator = HealthMonitorCoordinator(hass, entry)
