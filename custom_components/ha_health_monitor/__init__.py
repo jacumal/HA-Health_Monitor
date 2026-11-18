@@ -29,13 +29,16 @@ async def _async_register_card(hass: HomeAssistant) -> None:
     card_path = CARD_DIR / "ha-health-monitor-card.js"
     if not card_path.is_file():
         return
-    try:
-        await hass.http.async_register_static_paths(
-            [StaticPathConfig("/ha_health_monitor", str(CARD_DIR), False)]
-        )
-    except RuntimeError:
-        # Static path can already exist after an integration reload.
-        pass
+    if hass.http is not None:
+        try:
+            await hass.http.async_register_static_paths(
+                [StaticPathConfig("/ha_health_monitor", str(CARD_DIR), False)]
+            )
+        except RuntimeError:
+            # Static path can already exist after an integration reload.
+            pass
+    else:
+        return
     lovelace = hass.data.get(LOVELACE_DATA)
     if lovelace is None:
         return
