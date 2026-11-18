@@ -85,6 +85,20 @@
           "description": "Leave empty to reset all selected freshness profiles."
         }
       }
+    },
+    "set_entity_excluded": {
+      "name": "Set entity monitoring exclusion",
+      "description": "Include or exclude one entity from HA Health Monitor.",
+      "fields": {
+        "entity_id": {
+          "name": "Entity",
+          "description": "Entity to include or exclude."
+        },
+        "excluded": {
+          "name": "Excluded",
+          "description": "Whether to omit the entity from monitoring."
+        }
+      }
     }
   }
 }
