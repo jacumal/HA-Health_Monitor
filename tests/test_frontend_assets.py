@@ -40,3 +40,12 @@ def test_card_exposes_disabled_entities_as_non_scoring_module():
     assert 'disabled:["disabled","mdi:eye-off-outline"' in source
     assert "filter_disabled" in source
     assert "not_scored" in source
+
+
+
+def test_card_supports_reversible_manual_entity_exclusions():
+    source = CARD.read_text()
+    assert '"set_entity_excluded"' in source
+    assert 'data-a=\'exclude\'' in source
+    assert "manual_exclusions" in source
+    assert "entityPanel" in source
