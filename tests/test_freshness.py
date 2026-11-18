@@ -217,3 +217,18 @@ def test_storage_normalization_ignores_non_finite_and_oversized_values():
     assert learner.expected_interval("sensor.safe") is None
     assert learner.sample_count("sensor.safe") == 10000
     assert learner.export()["entities"]["sensor.safe"]["intervals"] == [300.0]
+
+
+def test_storage_does_not_trust_estimate_without_minimum_samples():
+    learner = FreshnessLearner.from_storage({
+        "entities": {
+            "sensor.incomplete": {
+                "last_reported": "2026-11-17T08:00:00+00:00",
+                "intervals": [],
+                "expected_interval": 300,
+                "sample_count": 5,
+            }
+        }
+    })
+    assert learner.expected_interval("sensor.incomplete") is None
+    assert learner.status("sensor.incomplete") == "learning"
