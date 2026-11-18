@@ -29,5 +29,8 @@ jobs:
       - name: Validate JSON catalogs and manifest
         run: python -m compileall -q custom_components && python -c "import json, pathlib; [json.loads(p.read_text()) for p in pathlib.Path('.').rglob('*.json')]"
 
+      - name: Validate Lovelace JavaScript syntax
+        run: node --check custom_components/ha_health_monitor/www/ha-health-monitor-card.js
+
       - name: Run tests
         run: pytest -q
