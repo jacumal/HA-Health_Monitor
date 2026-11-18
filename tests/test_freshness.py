@@ -201,3 +201,19 @@ def test_seed_repairs_a_profile_with_invalid_persisted_timestamp():
         baseline.isoformat()
     )
     assert learner.status("sensor.recovered") == "learning"
+
+
+def test_storage_normalization_ignores_non_finite_and_oversized_values():
+    learner = FreshnessLearner.from_storage({
+        "entities": {
+            "sensor.safe": {
+                "last_reported": "2026-11-17T08:00:00+00:00",
+                "intervals": [300, float("inf"), float("nan"), 10**10000],
+                "expected_interval": 10**10000,
+                "sample_count": 10**10000,
+            }
+        }
+    })
+    assert learner.expected_interval("sensor.safe") is None
+    assert learner.sample_count("sensor.safe") == 10000
+    assert learner.export()["entities"]["sensor.safe"]["intervals"] == [300.0]
