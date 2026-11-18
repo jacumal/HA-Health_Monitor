@@ -166,9 +166,9 @@ def normalize_incident_history(data: Any) -> list[dict[str, Any]]:
         if (
             not isinstance(rule_id, str) or not rule_id
             or not isinstance(target, str) or not target
-            or category not in VALID_CATEGORIES
-            or status not in VALID_STATUSES
-            or severity not in {"error", "warning"}
+            or not isinstance(category, str) or category not in VALID_CATEGORIES
+            or not isinstance(status, str) or status not in VALID_STATUSES
+            or not isinstance(severity, str) or severity not in {"error", "warning"}
             or issue_id != make_issue_id(rule_id, target)
         ):
             continue
