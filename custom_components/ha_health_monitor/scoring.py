@@ -1,4 +1,4 @@
-""""Explainable, coverage-aware score across all operational monitor domains."""
+"""Explainable, coverage-aware score across all operational monitor domains."""
 
 from __future__ import annotations
 
