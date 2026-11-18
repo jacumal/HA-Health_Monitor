@@ -19,7 +19,7 @@ from .coordinator import HealthMonitorCoordinator
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
 CARD_DIR = Path(__file__).parent / "www"
-CARD_URL = "/ha_health_monitor/ha-health-monitor-card.js?v=0.1.0"
+CARD_URL = "/ha_health_monitor/ha-health-monitor-card.js?v=0.1.1"
 
 type HealthMonitorConfigEntry = ConfigEntry[HealthMonitorCoordinator]
 
@@ -58,6 +58,7 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: HealthMonitorConfigEntry
 ) -> bool:
     """Set up HA Health Monitor from a config entry."""
+    await _async_register_card(hass)
     coordinator = HealthMonitorCoordinator(hass, entry)
     try:
         await coordinator.async_initialize()
