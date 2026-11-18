@@ -60,6 +60,9 @@
       },
       "unavailable_automations": {
         "name": "Automatizaciones no disponibles"
+      },
+      "disabled_entities": {
+        "name": "Entidades deshabilitadas"
       }
     },
     "binary_sensor": {
