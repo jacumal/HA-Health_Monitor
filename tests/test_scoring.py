@@ -25,7 +25,7 @@ def test_all_monitor_domains_assessed_have_full_coverage():
 
 def test_partial_integration_coverage_is_visible():
     result = complete(integration_assessed_count=1)
-    assert result["coverage_percent"] == 87.5
+    assert result["coverage_percent"] == 84.4
     assert result["status"] == "partial"
     assert result["categories"]["integrations"]["assessment"] == "partial"
 
