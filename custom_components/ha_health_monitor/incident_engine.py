@@ -97,7 +97,7 @@ def correlate_incidents(
     groups: dict[str, list[dict[str, Any]]] = {}
     for item in active_incidents:
         key = item.get("correlation_key") or (
-            f"{item.get('category')}:{item.get('target')}"
+            f"{item.get('category', 'unknown')}:{item.get('target', 'unknown')}"
         )
         groups.setdefault(key, []).append(item)
 
@@ -147,7 +147,6 @@ def _count(value: Any) -> int:
         return 1
 
 
-
 def normalize_incident_history(data: Any) -> list[dict[str, Any]]:
     """Validate persisted incidents before they enter the live coordinator."""
     if not isinstance(data, list):
@@ -178,12 +177,16 @@ def normalize_incident_history(data: Any) -> list[dict[str, Any]]:
         try:
             first_at = datetime.fromisoformat(first_seen)
             last_at = datetime.fromisoformat(last_seen)
-            if first_at.tzinfo is None or last_at.tzinfo is None:
+            if (
+                first_at.tzinfo is None
+                or last_at.tzinfo is None
+                or first_at > last_at
+            ):
                 continue
             resolved_at = item.get("resolved_at")
             if status == "resolved":
                 resolved = datetime.fromisoformat(resolved_at)
-                if resolved.tzinfo is None:
+                if resolved.tzinfo is None or resolved < last_at:
                     continue
             else:
                 resolved_at = None
@@ -192,7 +195,7 @@ def normalize_incident_history(data: Any) -> list[dict[str, Any]]:
 
         details = item.get("details")
         correlation_key = item.get("correlation_key")
-        normalized[issue_id] = {
+        candidate = {
             "issue_id": issue_id,
             "rule_id": rule_id,
             "category": category,
@@ -214,6 +217,15 @@ def normalize_incident_history(data: Any) -> list[dict[str, Any]]:
             "resolved_at": resolved_at,
             "occurrence_count": _count(item.get("occurrence_count", 1)),
         }
+        existing = normalized.get(issue_id)
+        if existing is not None:
+            existing_at = datetime.fromisoformat(existing["last_seen"])
+            if (last_at, status == "active") <= (
+                existing_at,
+                existing["status"] == "active",
+            ):
+                continue
+        normalized[issue_id] = candidate
 
     history = list(normalized.values())
     history.sort(
