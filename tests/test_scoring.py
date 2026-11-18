@@ -19,6 +19,8 @@ def test_all_monitor_domains_assessed_have_full_coverage():
     assert result["score"] == 100
     assert result["coverage_percent"] == 100
     assert result["status"] == "healthy"
+    assert result["categories"]["freshness"]["assessment"] == "disabled"
+    assert result["possible_points"] == 80
 
 
 def test_partial_integration_coverage_is_visible():
@@ -61,8 +63,8 @@ def test_partial_coverage_keeps_score_separate_from_confidence():
     result = complete(availability_assessed_count=5)
     assert result["score"] == 100
     assert result["status"] == "partial"
-    assert result["coverage_percent"] == 85
-    assert result["assessed_points"] == 85
+    assert result["coverage_percent"] == 81.2
+    assert result["assessed_points"] == 65
 
 
 def test_score_is_not_assessed_when_no_domain_has_coverage():
