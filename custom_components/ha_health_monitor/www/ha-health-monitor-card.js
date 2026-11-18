@@ -35,7 +35,7 @@ class HaHealthMonitorCard extends HTMLElement{
  let heading=view==="overview"?"":"<div class='viewheading'><small>"+this.t("module")+"</small><h2>"+this.t(view)+"</h2><button data-a='overview'>"+this.t("overview")+"</button></div>";
  let body=view==="overview"?this.overview():this.moduleView(view);
  let modal=this.issue&&this.cfg.issue_detail_mode!=="inline"?"<div class='overlay'><section class='dialog' role='dialog' aria-modal='true'><div class='dialoghead'><div><small>"+this.t("details")+"</small><h3>"+X(this.issueTitle(this.issue))+"</h3></div><button class='close' data-a='close' aria-label='"+this.t("close")+"'>×</button></div>"+this.issuePanel(this.issue)+"</section></div>":"";
- let foot="<footer><span>HA Health Monitor <small>v0.1.3</small></span><button data-a='scan'>↻ "+this.t("scan_now")+"</button></footer>";
+ let foot="<footer><span>HA Health Monitor <small>v0.1.4</small></span><button data-a='scan'>↻ "+this.t("scan_now")+"</button></footer>";
  this.shadowRoot.innerHTML=this.css()+"<ha-card><div class='shell "+this.cfg.density+"'>"+head+hero+heading+body+modal+foot+"</div></ha-card>";
  }
  color(s){return s===null?"var(--secondary-text-color)":s>=90?"var(--success-color,#299d70)":s>=70?"var(--warning-color,#c58b29)":"var(--error-color,#d95757)";}
@@ -70,7 +70,9 @@ class HaHealthMonitorCard extends HTMLElement{
  static getStubConfig(){return {type:"custom:ha-health-monitor",view:"overview",density:"compact"};}
  getCardSize(){return this.cfg.density==="detailed"?7:4;}
 }
+// Register both names: the legacy class tag and the Lovelace YAML type.
 if(!customElements.get("ha-health-monitor-card"))customElements.define("ha-health-monitor-card",HaHealthMonitorCard);
+if(!customElements.get("ha-health-monitor"))customElements.define("ha-health-monitor",HaHealthMonitorCard);
 class HaHealthMonitorEditor extends HTMLElement{
  constructor(){super();this.attachShadow({mode:"open"});this.cfg=Object.assign({},D,{modules:Object.assign({},D.modules)});}
  setConfig(c){this.cfg=Object.assign({},D,c,{modules:Object.assign({},D.modules,c.modules||{})});this.render();}
