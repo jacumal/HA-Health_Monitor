@@ -14,7 +14,13 @@ from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
-from .const import DOMAIN, SERVICE_RESET_FRESHNESS_LEARNING, SERVICE_SCAN_NOW
+from .const import (
+    CONF_EXCLUDED_ENTITIES,
+    DOMAIN,
+    SERVICE_RESET_FRESHNESS_LEARNING,
+    SERVICE_SCAN_NOW,
+    SERVICE_SET_ENTITY_EXCLUDED,
+)
 from .coordinator import HealthMonitorCoordinator
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
@@ -95,6 +101,30 @@ async def async_setup_entry(
             handle_reset_freshness,
             schema=vol.Schema({vol.Optional("entity_id"): cv.entity_id}),
         )
+
+    async def handle_set_entity_excluded(call: ServiceCall) -> None:
+        """Include or exclude one entity from health monitoring."""
+        entity_id = call.data["entity_id"]
+        excluded = call.data["excluded"]
+        options = dict(entry.options)
+        excluded_entities = set(options.get(CONF_EXCLUDED_ENTITIES, []))
+        if excluded:
+            excluded_entities.add(entity_id)
+        else:
+            excluded_entities.discard(entity_id)
+        options[CONF_EXCLUDED_ENTITIES] = sorted(excluded_entities)
+        hass.config_entries.async_update_entry(entry, options=options)
+
+    if not hass.services.has_service(DOMAIN, SERVICE_SET_ENTITY_EXCLUDED):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_SET_ENTITY_EXCLUDED,
+            handle_set_entity_excluded,
+            schema=vol.Schema({
+                vol.Required("entity_id"): cv.entity_id,
+                vol.Required("excluded"): cv.boolean,
+            }),
+        )
     return True
 
 
@@ -112,7 +142,11 @@ async def async_unload_entry(
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
         await entry.runtime_data.async_shutdown()
-        for service in (SERVICE_SCAN_NOW, SERVICE_RESET_FRESHNESS_LEARNING):
+        for service in (
+            SERVICE_SCAN_NOW,
+            SERVICE_RESET_FRESHNESS_LEARNING,
+            SERVICE_SET_ENTITY_EXCLUDED,
+        ):
             if hass.services.has_service(DOMAIN, service):
                 hass.services.async_remove(DOMAIN, service)
     return unloaded
