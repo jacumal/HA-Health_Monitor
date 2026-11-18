@@ -1,4 +1,4 @@
-"""Explainable, coverage-aware score across all operational monitor domains."""
+""""Explainable, coverage-aware score across all operational monitor domains."""
 
 from __future__ import annotations
 
@@ -31,6 +31,12 @@ def calculate_health_score(
     automation_assessed_count: int = 0,
 ) -> dict[str, Any]:
     """Calculate a normalized score and expose coverage and deductions."""
+    enabled = {
+        "availability": True,
+        "freshness": freshness_enabled,
+        "integrations": True,
+        "automations": True,
+    }
     coverage = {
         "availability": _coverage(
             availability_eligible_count, availability_assessed_count
@@ -38,7 +44,7 @@ def calculate_health_score(
         "freshness": (
             _coverage(selected_freshness_count, freshness_monitoring_count)
             if freshness_enabled
-            else 1.0
+            else 0.0
         ),
         "integrations": _coverage(
             integration_eligible_count, integration_assessed_count
@@ -50,6 +56,10 @@ def calculate_health_score(
     breakdown: dict[str, Any] = {}
     deductions_all: list[dict[str, Any]] = []
     assessed_points = earned_points = 0.0
+    enabled_points = sum(
+        weight for category, weight in CATEGORY_WEIGHTS.items()
+        if enabled[category]
+    )
     base_points = {
         "availability": 6.0,
         "freshness": 4.0,
@@ -58,7 +68,8 @@ def calculate_health_score(
     }
 
     for category, weight in CATEGORY_WEIGHTS.items():
-        possible = weight * coverage[category]
+        category_enabled = enabled[category]
+        possible = weight * coverage[category] if category_enabled else 0.0
         items = [
             issue
             for issue in active_incidents
@@ -102,7 +113,9 @@ def calculate_health_score(
         assessed_points += possible
         earned_points += remaining
         category_coverage = coverage[category]
-        if category_coverage >= 1:
+        if not category_enabled:
+            assessment = "disabled"
+        elif category_coverage >= 1:
             assessment = "assessed"
         elif category_coverage > 0:
             assessment = "partial"
@@ -119,7 +132,7 @@ def calculate_health_score(
             "deductions": deductions,
         }
 
-    percent = round(assessed_points, 1)
+    percent = round(assessed_points / enabled_points * 100, 1) if enabled_points else 0
     score = round(earned_points / assessed_points * 100) if assessed_points else None
     if score is None:
         status = "not_assessed"
@@ -137,7 +150,7 @@ def calculate_health_score(
         "status": status,
         "coverage_percent": percent,
         "assessed_points": round(assessed_points, 2),
-        "possible_points": 100,
+        "possible_points": enabled_points,
         "unassessed_categories": [
             key
             for key, value in breakdown.items()
