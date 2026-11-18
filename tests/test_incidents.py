@@ -178,3 +178,35 @@ def test_duplicate_persisted_incidents_keep_latest_lifecycle_record():
         assert len(result) == 1
         assert result[0]["status"] == "resolved"
         assert result[0]["last_seen"] == newer_resolved["last_seen"]
+
+
+
+def test_duplicate_history_uses_resolved_at_as_lifecycle_timestamp():
+    from custom_components.ha_health_monitor.incident_engine import (
+        make_issue_id,
+        normalize_incident_history,
+    )
+
+    issue_id = make_issue_id("freshness.stale", "sensor.temp")
+    active = {
+        "issue_id": issue_id,
+        "rule_id": "freshness.stale",
+        "category": "freshness",
+        "target": "sensor.temp",
+        "severity": "warning",
+        "status": "active",
+        "first_seen": "2026-11-17T10:00:00+00:00",
+        "last_seen": "2026-11-17T10:12:00+00:00",
+        "resolved_at": None,
+    }
+    resolved = {
+        **active,
+        "status": "resolved",
+        "last_seen": "2026-11-17T10:10:00+00:00",
+        "resolved_at": "2026-11-17T10:15:00+00:00",
+    }
+
+    result = normalize_incident_history([active, resolved])
+    assert len(result) == 1
+    assert result[0]["status"] == "resolved"
+    assert result[0]["resolved_at"] == resolved["resolved_at"]
