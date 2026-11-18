@@ -209,14 +209,20 @@ async def test_disabled_entities_are_excluded_from_freshness_selection(hass):
 
 
 
-async def test_manual_exclusions_are_published_and_excluded_from_availability(hass):
+async def test_manual_exclusions_are_published_and_excluded_from_availability(
+    hass, freezer
+):
     entry = MockConfigEntry(
         domain=DOMAIN,
         data={},
         options={CONF_EXCLUDED_ENTITIES: ["sensor.ignored"]},
     )
+    freezer.move_to("2026-11-18 10:00:00")
     hass.states.async_set("sensor.ignored", "unavailable")
     hass.states.async_set("sensor.monitored", "unavailable")
+    # Availability deliberately ignores short outages; age the state beyond
+    # the coordinator's two-minute grace period before collecting the snapshot.
+    freezer.tick(delta=timedelta(minutes=3))
     coordinator = HealthMonitorCoordinator(hass, entry)
     data = await coordinator._async_update_data()
     assert data["excluded_entities"] == ["sensor.ignored"]
