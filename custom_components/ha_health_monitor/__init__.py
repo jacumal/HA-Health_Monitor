@@ -25,7 +25,7 @@ from .coordinator import HealthMonitorCoordinator
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
 CARD_DIR = Path(__file__).parent / "www"
-CARD_URL = "/ha_health_monitor/ha-health-monitor-card.js?v=0.1.6"
+CARD_URL = "/ha_health_monitor/ha-health-monitor-card.js?v=0.1.7"
 
 type HealthMonitorConfigEntry = ConfigEntry[HealthMonitorCoordinator]
 
