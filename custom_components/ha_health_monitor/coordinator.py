@@ -8,6 +8,7 @@ from math import isfinite
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import (
     async_track_state_change_event,
@@ -35,7 +36,11 @@ from .incident_engine import (
     reconcile_incidents,
 )
 from .monitors.automations import collect_automation_health
-from .monitors.availability import collect_disabled_entities, collect_unavailable
+from .monitors.availability import (
+    collect_device_metadata,
+    collect_disabled_entities,
+    collect_unavailable,
+)
 from .monitors.freshness import FreshnessLearner, collect_adaptive_stale
 from .monitors.integrations import collect_integration_health
 from .scoring import calculate_health_score
@@ -215,8 +220,17 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
         threshold_multiplier = min(max(threshold_multiplier, 1.5), 10.0)
 
         try:
+            entity_registry = er.async_get(self.hass)
+            device_registry = dr.async_get(self.hass)
+            device_metadata = collect_device_metadata(
+                entity_registry.entities.values(), device_registry.devices.values()
+            )
             unavailable = collect_unavailable(
-                states, excluded, now, AVAILABILITY_GRACE_PERIOD
+                states,
+                excluded,
+                now,
+                AVAILABILITY_GRACE_PERIOD,
+                device_metadata,
             )
             stale, profiles = collect_adaptive_stale(
                 states,
