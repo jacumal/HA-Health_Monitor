@@ -30,3 +30,5 @@ def test_card_has_english_and_spanish_locales_and_issue_details():
     assert "en:{" in source and "es:{" in source
     assert "issuePanel" in source
     assert "aria-label" in source
+    assert "shell.detailed" in source
+    assert "scoremodule" in source
