@@ -196,7 +196,11 @@ def normalize_incident_history(data: Any) -> list[dict[str, Any]]:
             "issue_id": issue_id,
             "rule_id": rule_id,
             "category": category,
-            "entity_id": item.get("entity_id") if isinstance(item.get("entity_id"), str) else None,
+            "entity_id": (
+                item.get("entity_id")
+                if isinstance(item.get("entity_id"), str)
+                else None
+            ),
             "target": target,
             "severity": severity,
             "details": details if isinstance(details, dict) else {},
