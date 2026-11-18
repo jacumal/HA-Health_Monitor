@@ -32,3 +32,11 @@ def test_card_has_english_and_spanish_locales_and_issue_details():
     assert "aria-label" in source
     assert "shell.detailed" in source
     assert "scoremodule" in source
+
+
+def test_card_exposes_disabled_entities_as_non_scoring_module():
+    source = CARD.read_text()
+    assert "sensor.ha_health_monitor_disabled_entities" in source
+    assert 'disabled:["disabled","mdi:eye-off-outline"' in source
+    assert "filter_disabled" in source
+    assert "not_scored" in source
