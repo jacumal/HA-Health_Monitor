@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from hashlib import sha256
 from typing import Any
 
@@ -144,6 +145,81 @@ def _count(value: Any) -> int:
         return max(1, min(int(value), 1_000_000))
     except (TypeError, ValueError, OverflowError):
         return 1
+
+
+
+def normalize_incident_history(data: Any) -> list[dict[str, Any]]:
+    """Validate persisted incidents before they enter the live coordinator."""
+    if not isinstance(data, list):
+        return []
+
+    normalized: dict[str, dict[str, Any]] = {}
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        rule_id = item.get("rule_id")
+        target = item.get("target")
+        category = item.get("category")
+        status = item.get("status")
+        severity = item.get("severity")
+        issue_id = item.get("issue_id")
+        if (
+            not isinstance(rule_id, str) or not rule_id
+            or not isinstance(target, str) or not target
+            or category not in VALID_CATEGORIES
+            or status not in VALID_STATUSES
+            or severity not in {"error", "warning"}
+            or issue_id != make_issue_id(rule_id, target)
+        ):
+            continue
+
+        first_seen = item.get("first_seen")
+        last_seen = item.get("last_seen")
+        try:
+            first_at = datetime.fromisoformat(first_seen)
+            last_at = datetime.fromisoformat(last_seen)
+            if first_at.tzinfo is None or last_at.tzinfo is None:
+                continue
+            resolved_at = item.get("resolved_at")
+            if status == "resolved":
+                resolved = datetime.fromisoformat(resolved_at)
+                if resolved.tzinfo is None:
+                    continue
+            else:
+                resolved_at = None
+        except (TypeError, ValueError):
+            continue
+
+        details = item.get("details")
+        correlation_key = item.get("correlation_key")
+        normalized[issue_id] = {
+            "issue_id": issue_id,
+            "rule_id": rule_id,
+            "category": category,
+            "entity_id": item.get("entity_id") if isinstance(item.get("entity_id"), str) else None,
+            "target": target,
+            "severity": severity,
+            "details": details if isinstance(details, dict) else {},
+            "correlation_key": (
+                correlation_key if isinstance(correlation_key, str) and correlation_key
+                else f"{category}:{target}"
+            ),
+            "status": status,
+            "first_seen": first_seen,
+            "last_seen": last_seen,
+            "resolved_at": resolved_at,
+            "occurrence_count": _count(item.get("occurrence_count", 1)),
+        }
+
+    history = list(normalized.values())
+    history.sort(
+        key=lambda item: (
+            item["status"] == "active",
+            item["last_seen"],
+        ),
+        reverse=True,
+    )
+    return history[:MAX_INCIDENT_HISTORY]
 
 
 def reconcile_incidents(
