@@ -27,6 +27,12 @@ ENTITY_DESCRIPTIONS = (
         key="health_status",
         translation_key="health_status",
         icon="mdi:heart-pulse",
+    ),    SensorEntityDescription(
+        key="health_coverage",
+        translation_key="health_coverage",
+        icon="mdi:chart-donut",
+        native_unit_of_measurement="%",
+        state_class=SensorStateClass.MEASUREMENT,
     ),
     SensorEntityDescription(
         key="active_incidents",
@@ -124,6 +130,8 @@ class HealthMonitorSensor(CoordinatorEntity[HealthMonitorCoordinator], SensorEnt
             return data["health_score"]
         if key == "health_status":
             return data["health_status"]
+        if key == "health_coverage":
+            return data["health_coverage_percent"]
         if key == "active_incidents":
             return len(data["active_incidents"])
         if key == "incident_history":
