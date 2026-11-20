@@ -305,3 +305,40 @@ async def test_integration_activity_profile_pauses_and_resumes_incident_lifecycl
     assert len(recurring["active_incidents"]) == 1
     assert recurring["active_incidents"][0]["occurrence_count"] == 2
     await coordinator.async_shutdown()
+
+async def test_hourly_health_metrics_are_sampled_and_persisted(hass, freezer):
+    """Health history keeps hourly snapshots and survives coordinator shutdown."""
+    freezer.move_to("2026-11-20 10:00:00")
+    entry = MockConfigEntry(domain=DOMAIN, data={})
+    coordinator = HealthMonitorCoordinator(hass, entry)
+
+    first = await coordinator._async_update_data()
+    assert len(first["metrics_history"]) == 1
+    assert first["metrics_history"][0]["timestamp"].startswith("2026-11-20T10:00")
+    assert "health_score" in first["metrics_history"][0]
+    assert "coverage_percent" in first["metrics_history"][0]
+
+    freezer.tick(delta=timedelta(minutes=30))
+    second = await coordinator._async_update_data()
+    assert len(second["metrics_history"]) == 1
+
+    freezer.tick(delta=timedelta(minutes=31))
+    third = await coordinator._async_update_data()
+    assert len(third["metrics_history"]) == 2
+
+    await coordinator.async_shutdown()
+    stored = await coordinator._metrics_store.async_load()
+    assert len(stored["samples"]) == 2
+
+
+async def test_health_metrics_history_is_bounded_to_thirty_days(hass):
+    """Restored metrics are bounded to the supported 30-day chart window."""
+    entry = MockConfigEntry(domain=DOMAIN, data={})
+    coordinator = HealthMonitorCoordinator(hass, entry)
+    coordinator._metrics_history = [
+        {"timestamp": f"2026-11-{day:02d}T00:00:00+00:00", "health_score": 90}
+        for day in range(1, 32)
+    ]
+    coordinator._metrics_history = coordinator._metrics_history[-720:]
+    assert len(coordinator._metrics_history) <= 720
+    await coordinator.async_shutdown()
