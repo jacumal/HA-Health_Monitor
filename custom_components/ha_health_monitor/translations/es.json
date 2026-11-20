@@ -98,7 +98,8 @@
           "name": "Excluded",
           "description": "Whether to omit the entity from monitoring."
         }
-      }
+      },
+    "set_availability_profile": {"name":"Configurar perfil de disponibilidad del dispositivo","description":"Configura la disponibilidad condicional de un dispositivo.","fields":{"device_id":{"name":"ID del dispositivo"},"reference_entity":{"name":"Entidad de referencia"},"conditional_entities":{"name":"Entidades condicionales"},"inactive_states":{"name":"Estados inactivos"},"remove":{"name":"Eliminar perfil"}}}
     }
   }
 }
