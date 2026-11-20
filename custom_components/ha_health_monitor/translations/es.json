@@ -63,6 +63,9 @@
       },
       "disabled_entities": {
         "name": "Entidades deshabilitadas"
+      },
+      "health_history": {
+        "name": "Histórico de salud"
       }
     },
     "binary_sensor": {
