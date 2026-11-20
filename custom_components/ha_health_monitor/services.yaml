@@ -78,7 +78,7 @@ set_integration_availability_profile:
     conditional_entities:
       name: Conditional entities
       description: Only these entities are ignored while the reference entity is inactive.
-      required: true
+      required: false
       selector:
         entity:
           multiple: true
