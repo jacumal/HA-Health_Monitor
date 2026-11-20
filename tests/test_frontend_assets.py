@@ -65,3 +65,16 @@ def test_card_labels_issues_with_translated_integration_names():
         in source
     )
     assert 'this.entityLabel(id,typeof x==="object"?x.platform:null)' in source
+
+def test_card_footer_version_matches_manifest_release_candidate():
+    source = CARD.read_text()
+    manifest = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "ha_health_monitor"
+        / "manifest.json"
+    )
+    import json
+
+    version = json.loads(manifest.read_text())["version"]
+    assert f"<small>v{version}</small>" in source
