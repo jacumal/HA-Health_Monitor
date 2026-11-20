@@ -160,9 +160,13 @@ async def async_setup_entry(
                         f"{entity_id} is not registered to the selected device"
                     )
             if reference in entities:
-                raise HomeAssistantError("The reference entity cannot also be conditional")
+                raise HomeAssistantError(
+                "The reference entity cannot also be conditional"
+            )
             if not entities or not inactive:
-                raise HomeAssistantError("Select conditional entities and at least one inactive state")
+                raise HomeAssistantError(
+                "Select conditional entities and at least one inactive state"
+            )
             profiles[device_id] = {
                 "device_name": device.name_by_user or device.name,
                 "reference_entity": reference,
@@ -177,13 +181,17 @@ async def async_setup_entry(
             DOMAIN,
             SERVICE_SET_AVAILABILITY_PROFILE,
             handle_set_availability_profile,
-            schema=vol.Schema({
-            vol.Required("device_id"): cv.string,
-            vol.Optional("remove", default=False): cv.boolean,
-            vol.Optional("reference_entity"): cv.entity_id,
-            vol.Optional("conditional_entities", default=[]): vol.All(cv.ensure_list, [cv.entity_id]),
-                vol.Optional("inactive_states", default=""): cv.string,
-            }),
+            schema=vol.Schema(
+                {
+                    vol.Required("device_id"): cv.string,
+                    vol.Optional("remove", default=False): cv.boolean,
+                    vol.Optional("reference_entity"): cv.entity_id,
+                    vol.Optional("conditional_entities", default=[]): vol.All(
+                        cv.ensure_list, [cv.entity_id]
+                    ),
+                    vol.Optional("inactive_states", default=""): cv.string,
+                }
+            ),
         )
     return True
 
