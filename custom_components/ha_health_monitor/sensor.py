@@ -38,6 +38,10 @@ ENTITY_DESCRIPTIONS = (
         key="incident_history",
         translation_key="incident_history",
         icon="mdi:history",
+    ),    SensorEntityDescription(
+        key="health_history",
+        translation_key="health_history",
+        icon="mdi:chart-line",
     ),
     SensorEntityDescription(
         key="disabled_entities",
@@ -123,6 +127,8 @@ class HealthMonitorSensor(CoordinatorEntity[HealthMonitorCoordinator], SensorEnt
             return len(data["active_incidents"])
         if key == "incident_history":
             return len(data["incident_history"])
+        if key == "health_history":
+            return len(data.get("metrics_history", []))
         if key == "failed_integrations":
             return data["integration_health"]["failed_count"]
         if key == "unavailable_automations":
@@ -154,6 +160,12 @@ class HealthMonitorSensor(CoordinatorEntity[HealthMonitorCoordinator], SensorEnt
             return data["automation_health"]
         if key == "incident_history":
             return {"incidents": data["incident_history"][-50:]}
+        if key == "health_history":
+            return {
+                "samples": data.get("metrics_history", []),
+                "retention_hours": 2160,
+                "sample_interval_minutes": 60,
+            }
         if key == "disabled_entities":
             return {"entities": data["disabled_entities"]}
         if key == "unavailable_entities":
