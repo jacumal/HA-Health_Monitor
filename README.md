@@ -136,10 +136,15 @@ Only select entities expected to report regularly. Static, event-driven and batt
 
 The score sensor exposes coverage, status, category breakdown and traceable deductions. The incidents sensor exposes active incidents and correlation groups; the history sensor exposes the latest 50 historical records. The stale sensor exposes per-entity learning status and cadence. The integration and automation sensors expose their respective assessment counts and findings.
 
+## Statistics
+
+The integration exposes numeric measurement entities (health score, active incidents, unavailable entities, stale entities, failed integrations and unavailable automations) with Home Assistant measurement state classes where applicable. Home Assistant Recorder/statistics settings determine the retention and availability of historical graphs. The incident history entity is a bounded current snapshot (up to 50 records in its attributes), not a time-series event warehouse; historical incident analysis beyond that snapshot remains future work.
+
 ## Services
 
 - `ha_health_monitor.scan_now`: run an immediate scan.
 - `ha_health_monitor.reset_freshness_learning`: reset one selected entity (optional `entity_id`) or all selected profiles.
+- `ha_health_monitor.set_integration_availability_profile`: pause availability and freshness findings for all enabled entities belonging to one integration config entry while a reference entity reports one of the explicitly configured inactive states. Set `config_entry_id`, `reference_entity` and comma-separated `inactive_states`; set `remove: true` with only the config entry ID to remove the profile. Missing, unknown and unavailable reference states fail open (normal monitoring).
 
 ## Product direction
 
