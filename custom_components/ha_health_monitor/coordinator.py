@@ -128,7 +128,11 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             item for item in raw_metrics
             if isinstance(item, dict)
             and isinstance(item.get("timestamp"), str)
-            and isinstance(item.get("health_score"), (int, float))
+            and dt_util.parse_datetime(item["timestamp"]) is not None
+            and (
+                item.get("health_score") is None
+                or isinstance(item.get("health_score"), (int, float))
+            )
         ][-METRICS_HISTORY_LIMIT:] if isinstance(raw_metrics, list) else []
         raw_incidents = (
             incident_data.get("incidents")
