@@ -6,7 +6,7 @@ HA Health Monitor is an open-source Home Assistant integration for local observa
 
 > Requires Home Assistant 2024.11 or newer.
 >
-> **Development status:** early development (0.1.0). The four backend monitor domains, incident lifecycle, bounded persistence and coverage-aware Health Score are implemented and covered by automated CI. The first bundled Hybrid Lovelace card is implemented; CI and real-installation validation are in progress. This is not yet a stable release.
+> **Development status:** early development (0.1.7). The four backend monitor domains, incident lifecycle, bounded persistence and coverage-aware Health Score are implemented and covered by automated CI. The first bundled Hybrid Lovelace card is implemented; CI and real-installation validation are in progress. This is not yet a stable release.
 
 ## Implemented backend
 
