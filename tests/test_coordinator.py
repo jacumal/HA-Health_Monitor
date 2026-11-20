@@ -229,3 +229,79 @@ async def test_manual_exclusions_are_published_and_excluded_from_availability(
     assert [item["entity_id"] for item in data["unavailable_entities"]] == [
         "sensor.monitored"
     ]
+
+
+async def test_integration_activity_profile_pauses_and_resumes_incident_lifecycle(
+    hass, freezer
+):
+    """Standby suppresses entity findings and resolves/reopens incidents."""
+    from custom_components.ha_health_monitor.const import (
+        CONF_INTEGRATION_AVAILABILITY_PROFILES,
+    )
+
+    freezer.move_to("2026-11-20 10:00:00")
+    integration_entry = MockConfigEntry(domain="washdata", title="Washer")
+    integration_entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    registry.async_get_or_create(
+        "sensor",
+        "washdata",
+        "activity",
+        suggested_object_id="washer_activity",
+        config_entry=integration_entry,
+    )
+    registry.async_get_or_create(
+        "sensor",
+        "washdata",
+        "power",
+        suggested_object_id="washer_power",
+        config_entry=integration_entry,
+    )
+
+    hass.states.async_set("sensor.washer_activity", "off")
+    hass.states.async_set("sensor.washer_power", "unavailable")
+    freezer.tick(delta=timedelta(minutes=3))
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={},
+        options={
+            CONF_INTEGRATION_AVAILABILITY_PROFILES: {
+                integration_entry.entry_id: {
+                    "domain": "washdata",
+                    "title": "Washer",
+                    "reference_entity": "sensor.washer_activity",
+                    "inactive_states": ["off", "idle"],
+                }
+            }
+        },
+    )
+    coordinator = HealthMonitorCoordinator(hass, entry)
+
+    standby = await coordinator._async_update_data()
+    assert standby["unavailable_entities"] == []
+    assert standby["standby_suppressed_entities"] == ["sensor.washer_power"]
+    assert standby["active_incidents"] == []
+
+    hass.states.async_set("sensor.washer_activity", "running")
+    active = await coordinator._async_update_data()
+    assert [item["entity_id"] for item in active["unavailable_entities"]] == [
+        "sensor.washer_power"
+    ]
+    assert len(active["active_incidents"]) == 1
+    first_issue_id = active["active_incidents"][0]["issue_id"]
+
+    hass.states.async_set("sensor.washer_activity", "off")
+    resolved = await coordinator._async_update_data()
+    assert resolved["active_incidents"] == []
+    history_item = next(
+        item for item in resolved["incident_history"]
+        if item["issue_id"] == first_issue_id
+    )
+    assert history_item["status"] == "resolved"
+
+    hass.states.async_set("sensor.washer_activity", "running")
+    recurring = await coordinator._async_update_data()
+    assert len(recurring["active_incidents"]) == 1
+    assert recurring["active_incidents"][0]["occurrence_count"] == 2
+    await coordinator.async_shutdown()
