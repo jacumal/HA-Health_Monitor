@@ -143,7 +143,8 @@ async def async_setup_entry(
                 raise HomeAssistantError("Unknown Home Assistant device_id")
             reference = call.data["reference_entity"]
             entities = call.data["conditional_entities"]
-            inactive = call.data["inactive_states"]
+            raw_inactive = call.data["inactive_states"]
+            inactive = [value.strip() for value in raw_inactive.split(",") if value.strip()] if isinstance(raw_inactive, str) else raw_inactive
             for entity_id in [reference, *entities]:
                 item = registry.async_get(entity_id)
                 if item is None or item.device_id != device_id:
@@ -162,7 +163,7 @@ async def async_setup_entry(
             vol.Optional("remove", default=False): cv.boolean,
             vol.Optional("reference_entity"): cv.entity_id,
             vol.Optional("conditional_entities", default=[]): vol.All(cv.ensure_list, [cv.entity_id]),
-            vol.Optional("inactive_states", default=[]): vol.All(cv.ensure_list, [cv.string]),
+            vol.Optional("inactive_states", default=""): cv.string,
         }))
     return True
 
