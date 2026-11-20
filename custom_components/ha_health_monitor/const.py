@@ -4,6 +4,7 @@ DOMAIN = "ha_health_monitor"
 
 CONF_SCAN_INTERVAL = "scan_interval_minutes"
 CONF_EXCLUDED_ENTITIES = "excluded_entities"
+CONF_AVAILABILITY_PROFILES = "availability_profiles"
 CONF_MONITOR_FRESHNESS = "monitor_freshness"
 CONF_FRESHNESS_ENTITIES = "freshness_entities"
 CONF_FRESHNESS_MULTIPLIER = "freshness_threshold_multiplier"
@@ -18,4 +19,5 @@ MAX_SCAN_INTERVAL = 60
 
 SERVICE_SCAN_NOW = "scan_now"
 SERVICE_SET_ENTITY_EXCLUDED = "set_entity_excluded"
+SERVICE_SET_AVAILABILITY_PROFILE = "set_availability_profile"
 SERVICE_RESET_FRESHNESS_LEARNING = "reset_freshness_learning"
