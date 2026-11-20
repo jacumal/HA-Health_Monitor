@@ -71,14 +71,14 @@ set_integration_availability_profile:
         config_entry:
     reference_entity:
       name: Activity reference entity
-      required: true
+      required: false
       selector:
         entity:
           multiple: false
     inactive_states:
       name: Inactive states
       description: Comma-separated exact states, such as off, idle or standby.
-      required: true
+      required: false
       selector:
         text:
     remove:
