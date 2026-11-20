@@ -29,3 +29,32 @@ set_entity_excluded:
       required: true
       selector:
         boolean:
+
+set_availability_profile:
+  name: Configure device availability profile
+  description: Configure conditional availability for a device.
+  fields:
+    device_id:
+      name: Device ID
+      required: true
+      selector:
+        text:
+    reference_entity:
+      name: Reference entity
+      selector:
+        entity:
+          multiple: false
+    conditional_entities:
+      name: Conditional entities
+      selector:
+        entity:
+          multiple: true
+    inactive_states:
+      name: Inactive states
+      description: Exact inactive states, for example off or idle.
+      selector:
+        text:
+    remove:
+      name: Remove profile
+      selector:
+        boolean:
