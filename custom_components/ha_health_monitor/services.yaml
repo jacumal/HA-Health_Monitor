@@ -62,7 +62,7 @@ set_availability_profile:
 
 set_integration_availability_profile:
   name: Configure integration activity profile
-  description: Pause entity monitoring for one integration config entry while its reference entity reports an explicit inactive state.
+  description: Ignore only selected conditional entities while the reference entity reports an explicit inactive state.
   fields:
     config_entry_id:
       name: Integration config entry
@@ -75,6 +75,13 @@ set_integration_availability_profile:
       selector:
         entity:
           multiple: false
+    conditional_entities:
+      name: Conditional entities
+      description: Only these entities are ignored while the reference entity is inactive.
+      required: true
+      selector:
+        entity:
+          multiple: true
     inactive_states:
       name: Inactive states
       description: Comma-separated exact states, such as off, idle or standby.
