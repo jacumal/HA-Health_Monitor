@@ -29,7 +29,7 @@ from .coordinator import HealthMonitorCoordinator
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
 CARD_DIR = Path(__file__).parent / "www"
-CARD_URL = "/ha_health_monitor/ha-health-monitor-card.js?v=0.1.8"
+CARD_URL = "/ha_health_monitor/ha-health-monitor-card.js?v=0.1.6"
 
 type HealthMonitorConfigEntry = ConfigEntry[HealthMonitorCoordinator]
 
@@ -141,9 +141,13 @@ async def async_setup_entry(
             registry = er.async_get(hass)
             if device is None:
                 raise HomeAssistantError("Unknown Home Assistant device_id")
-            reference = call.data["reference_entity"]
-            entities = call.data["conditional_entities"]
-            raw_inactive = call.data["inactive_states"]
+            reference = call.data.get("reference_entity")
+            entities = call.data.get("conditional_entities", [])
+            raw_inactive = call.data.get("inactive_states", "")
+            if not reference:
+                raise HomeAssistantError(
+                    "Select a reference entity for the availability profile"
+                )
             inactive = (
                 [
                     value.strip()
@@ -161,12 +165,12 @@ async def async_setup_entry(
                     )
             if reference in entities:
                 raise HomeAssistantError(
-                "The reference entity cannot also be conditional"
-            )
+                    "The reference entity cannot also be conditional"
+                )
             if not entities or not inactive:
                 raise HomeAssistantError(
-                "Select conditional entities and at least one inactive state"
-            )
+                    "Select conditional entities and at least one inactive state"
+                )
             profiles[device_id] = {
                 "device_name": device.name_by_user or device.name,
                 "reference_entity": reference,
