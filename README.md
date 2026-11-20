@@ -127,6 +127,7 @@ Only select entities expected to report regularly. Static, event-driven and batt
 
 - `sensor.ha_health_monitor_health_score`
 - `sensor.ha_health_monitor_health_status`
+- `sensor.ha_health_monitor_health_coverage`
 - `sensor.ha_health_monitor_active_incidents`
 - `sensor.ha_health_monitor_incident_history`
 - `sensor.ha_health_monitor_health_history`
@@ -141,7 +142,7 @@ The score sensor exposes coverage, status, category breakdown and traceable dedu
 
 ## Statistics
 
-Operational statistics are exposed as numeric Home Assistant sensors (health score, active incidents, unavailable entities, stale entities, failed integrations and unavailable automations). Their measurement state classes allow Home Assistant Recorder to retain and graph current values according to the installation's Recorder settings. In addition, HA Health Monitor stores hourly snapshots of health score, coverage, active incidents and monitor counts in a versioned Home Assistant Store. The history is capped at 720 samples (30 days) and exposed through `sensor.ha_health_monitor_health_history`. The Lovelace overview plots the score and offers 24 h, 7 d and 30 d filters. Resolved and recurring incident counts are derived from the persisted incident lifecycle records (up to 500 records). A new installation needs time to accumulate samples; the chart appears once at least two samples exist in the selected period.
+Operational statistics are exposed as numeric Home Assistant sensors (health score, health coverage, active incidents, unavailable entities, stale entities, failed integrations and unavailable automations). Their measurement state classes allow Home Assistant Recorder to retain and graph current values according to the installation's Recorder settings. In addition, HA Health Monitor stores hourly snapshots of health score, coverage, active incidents and monitor counts in a versioned Home Assistant Store. The history is capped at 720 samples (30 days) and exposed through `sensor.ha_health_monitor_health_history`. The Lovelace overview plots the score and offers 24 h, 7 d and 30 d filters. Resolved and recurring incident counts are derived from the persisted incident lifecycle records (up to 500 records). A new installation needs time to accumulate samples; the chart appears once at least two samples exist in the selected period.
 
 ## Services
 
