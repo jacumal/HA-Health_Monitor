@@ -118,12 +118,14 @@ def test_device_metadata_links_entities_to_registered_devices():
 
     assert metadata == {
         "sensor.washer_power": {
+            "platform": "washdata",
             "device_id": "device-1",
             "device_name": "Washer",
             "manufacturer": "Example",
             "model": "W100",
-            "platform": "washdata",
-        }
+        },
+        "sensor.unrelated": {"platform": "mqtt"},
+        "sensor.orphan": {"platform": "test"},
     }
 
 
@@ -332,3 +334,39 @@ def test_integration_profile_ignores_reference_from_another_entry():
     )
     assert result["suppressed_entity_ids"] == set()
     assert result["profiles"] == []
+
+
+
+def test_integration_metadata_is_available_without_device_registration():
+    entities = [
+        SimpleNamespace(
+            entity_id="media_player.salon_apel_tivi",
+            device_id=None,
+            platform="apple_tv",
+        )
+    ]
+
+    metadata = collect_device_metadata(entities, [])
+
+    assert metadata == {
+        "media_player.salon_apel_tivi": {"platform": "apple_tv"}
+    }
+
+
+def test_unavailable_finding_includes_integration_for_entity_without_device():
+    now = datetime(2026, 11, 17, 10, 0, tzinfo=UTC)
+    state = SimpleNamespace(
+        entity_id="media_player.salon_apel_tivi",
+        state="unavailable",
+        name="Apple TV",
+        last_changed=now - timedelta(minutes=5),
+    )
+    metadata = {
+        "media_player.salon_apel_tivi": {"platform": "apple_tv"}
+    }
+
+    result = collect_unavailable(
+        [state], set(), now, timedelta(minutes=2), metadata
+    )
+
+    assert result[0]["platform"] == "apple_tv"
