@@ -65,10 +65,10 @@ set_integration_availability_profile:
   description: Pause entity monitoring for one integration config entry while its reference entity reports an explicit inactive state.
   fields:
     config_entry_id:
-      name: Integration config entry ID
+      name: Integration config entry
       required: true
       selector:
-        text:
+        config_entry:
     reference_entity:
       name: Activity reference entity
       required: true
