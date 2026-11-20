@@ -259,6 +259,8 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
                 now,
                 threshold_multiplier,
             )
+            for item in stale:
+                item.update(device_metadata.get(item["entity_id"], {}))
         except (AttributeError, TypeError, ValueError) as err:
             raise UpdateFailed(
                 f"Unable to inspect Home Assistant states: {err}"
