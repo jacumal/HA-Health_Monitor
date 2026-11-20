@@ -60,6 +60,33 @@ def collect_unavailable(
     return unavailable
 
 
+def evaluate_availability_profiles(states: Iterable[State], profiles: dict[str, dict], device_metadata: dict[str, dict]) -> dict:
+    """Suppress conditional entities only for explicitly configured standby states."""
+    state_by_id = {state.entity_id: state for state in states}
+    conditional_ids: set[str] = set()
+    suppressed_ids: set[str] = set()
+    statuses = []
+    for device_id, profile in (profiles or {}).items():
+        if not isinstance(profile, dict):
+            continue
+        reference = profile.get("reference_entity")
+        entities = profile.get("conditional_entities", [])
+        inactive = profile.get("inactive_states", [])
+        if not isinstance(reference, str) or not isinstance(entities, list) or not isinstance(inactive, list):
+            continue
+        if device_metadata.get(reference, {}).get("device_id") != device_id:
+            continue
+        valid = {entity_id for entity_id in entities if isinstance(entity_id, str) and device_metadata.get(entity_id, {}).get("device_id") == device_id}
+        conditional_ids.update(valid)
+        state = state_by_id.get(reference)
+        reference_state = state.state if state is not None else None
+        standby = isinstance(reference_state, str) and reference_state in inactive
+        if standby:
+            suppressed_ids.update(valid)
+        statuses.append({"device_id": device_id, "reference_entity": reference, "reference_state": reference_state, "conditional_entities": sorted(valid), "suppressed_entities": sorted(valid) if standby else [], "status": "standby" if standby else "monitoring"})
+    return {"conditional_entity_ids": conditional_ids, "suppressed_entity_ids": suppressed_ids, "profiles": statuses}
+
+
 def collect_disabled_entities(registry_entries: Iterable) -> list[dict]:
     """Return registry entities explicitly disabled in Home Assistant."""
     disabled = []
