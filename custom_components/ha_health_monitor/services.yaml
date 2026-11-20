@@ -58,3 +58,30 @@ set_availability_profile:
       name: Remove profile
       selector:
         boolean:
+
+
+set_integration_availability_profile:
+  name: Configure integration activity profile
+  description: Pause entity monitoring for one integration config entry while its reference entity reports an explicit inactive state.
+  fields:
+    config_entry_id:
+      name: Integration config entry
+      required: true
+      selector:
+        config_entry:
+    reference_entity:
+      name: Activity reference entity
+      required: false
+      selector:
+        entity:
+          multiple: false
+    inactive_states:
+      name: Inactive states
+      description: Comma-separated exact states, such as off, idle or standby.
+      required: false
+      selector:
+        text:
+    remove:
+      name: Remove profile
+      selector:
+        boolean:

@@ -16,20 +16,23 @@ def collect_device_metadata(
     devices = {device.id: device for device in device_registry_entries}
     metadata = {}
     for entity in entity_registry_entries:
+        platform = getattr(entity, "platform", None)
         device_id = getattr(entity, "device_id", None)
+        metadata[entity.entity_id] = {"platform": platform}
         if device_id is None:
             continue
         device = devices.get(device_id)
         if device is None:
             continue
-        metadata[entity.entity_id] = {
-            "device_id": device.id,
-            "device_name": getattr(device, "name_by_user", None)
-            or getattr(device, "name", None),
-            "manufacturer": getattr(device, "manufacturer", None),
-            "model": getattr(device, "model", None),
-            "platform": getattr(entity, "platform", None),
-        }
+        metadata[entity.entity_id].update(
+            {
+                "device_id": device.id,
+                "device_name": getattr(device, "name_by_user", None)
+                or getattr(device, "name", None),
+                "manufacturer": getattr(device, "manufacturer", None),
+                "model": getattr(device, "model", None),
+            }
+        )
     return metadata
 
 
@@ -135,3 +138,72 @@ def collect_disabled_entities(registry_entries: Iterable) -> list[dict]:
             }
         )
     return sorted(disabled, key=lambda item: item["entity_id"])
+
+
+def evaluate_integration_activity_profiles(
+    states: Iterable[State],
+    profiles: dict[str, dict],
+    entity_registry_entries: Iterable,
+) -> dict:
+    """Suppress all entities from a config entry only in explicit inactive states.
+
+    Profiles are keyed by config_entry_id. Unknown, unavailable or missing
+    reference states fail open and keep the integration fully monitored.
+    """
+    state_by_id = {state.entity_id: state for state in states}
+    entries = {entry.entity_id: entry for entry in entity_registry_entries}
+    conditional_ids: set[str] = set()
+    suppressed_ids: set[str] = set()
+    statuses = []
+    for config_entry_id, profile in (profiles or {}).items():
+        if not isinstance(profile, dict):
+            continue
+        reference = profile.get("reference_entity")
+        inactive = profile.get("inactive_states", [])
+        reference_entry = (
+            entries.get(reference) if isinstance(reference, str) else None
+        )
+        if (
+            reference_entry is None
+            or reference_entry.config_entry_id != config_entry_id
+            or not isinstance(inactive, list)
+            or not inactive
+        ):
+            continue
+        integration_entities = {
+            entity_id
+            for entity_id, entry in entries.items()
+            if entry.config_entry_id == config_entry_id
+            and entity_id != reference
+            and getattr(entry, "disabled_by", None) is None
+        }
+        conditional_ids.update(integration_entities)
+        reference_state_obj = state_by_id.get(reference)
+        reference_state = (
+            reference_state_obj.state if reference_state_obj is not None else None
+        )
+        standby = (
+            isinstance(reference_state, str)
+            and reference_state not in ("unknown", "unavailable")
+            and reference_state in inactive
+        )
+        if standby:
+            suppressed_ids.update(integration_entities)
+        statuses.append(
+            {
+                "config_entry_id": config_entry_id,
+                "integration": reference_entry.platform,
+                "reference_entity": reference,
+                "reference_state": reference_state,
+                "conditional_entity_count": len(integration_entities),
+                "suppressed_entities": (
+                    sorted(integration_entities) if standby else []
+                ),
+                "status": "standby" if standby else "monitoring",
+            }
+        )
+    return {
+        "conditional_entity_ids": conditional_ids,
+        "suppressed_entity_ids": suppressed_ids,
+        "profiles": statuses,
+    }

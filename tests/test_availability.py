@@ -8,6 +8,7 @@ from custom_components.ha_health_monitor.monitors.availability import (
     collect_disabled_entities,
     collect_unavailable,
     evaluate_availability_profiles,
+    evaluate_integration_activity_profiles,
 )
 
 
@@ -117,12 +118,14 @@ def test_device_metadata_links_entities_to_registered_devices():
 
     assert metadata == {
         "sensor.washer_power": {
+            "platform": "washdata",
             "device_id": "device-1",
             "device_name": "Washer",
             "manufacturer": "Example",
             "model": "W100",
-            "platform": "washdata",
-        }
+        },
+        "sensor.unrelated": {"platform": "mqtt"},
+        "sensor.orphan": {"platform": "test"},
     }
 
 
@@ -216,3 +219,154 @@ def test_profiles_ignore_entities_from_other_devices():
     )
     assert result["conditional_entity_ids"] == set()
     assert result["suppressed_entity_ids"] == set()
+
+
+
+def test_integration_profile_suppresses_every_entity_in_config_entry():
+    entries = [
+        SimpleNamespace(
+            entity_id="sensor.activity",
+            config_entry_id="entry-1",
+            platform="washdata",
+            disabled_by=None,
+        ),
+        SimpleNamespace(
+            entity_id="sensor.power",
+            config_entry_id="entry-1",
+            platform="washdata",
+            disabled_by=None,
+        ),
+        SimpleNamespace(
+            entity_id="sensor.cycle",
+            config_entry_id="entry-1",
+            platform="washdata",
+            disabled_by=None,
+        ),
+        SimpleNamespace(
+            entity_id="sensor.other",
+            config_entry_id="entry-2",
+            platform="washdata",
+            disabled_by=None,
+        ),
+    ]
+    profiles = {
+        "entry-1": {
+            "reference_entity": "sensor.activity",
+            "inactive_states": ["off", "idle"],
+        }
+    }
+    states = [
+        SimpleNamespace(entity_id="sensor.activity", state="idle"),
+        SimpleNamespace(entity_id="sensor.power", state="unavailable"),
+    ]
+
+    result = evaluate_integration_activity_profiles(states, profiles, entries)
+
+    assert result["conditional_entity_ids"] == {
+        "sensor.power",
+        "sensor.cycle",
+    }
+    assert result["suppressed_entity_ids"] == {
+        "sensor.power",
+        "sensor.cycle",
+    }
+    assert result["profiles"][0]["status"] == "standby"
+
+
+def test_integration_profile_fails_open_for_unknown_reference_state():
+    entries = [
+        SimpleNamespace(
+            entity_id="sensor.activity",
+            config_entry_id="entry-1",
+            platform="roomba",
+            disabled_by=None,
+        ),
+        SimpleNamespace(
+            entity_id="sensor.battery",
+            config_entry_id="entry-1",
+            platform="roomba",
+            disabled_by=None,
+        ),
+    ]
+    profiles = {
+        "entry-1": {
+            "reference_entity": "sensor.activity",
+            "inactive_states": ["docked"],
+        }
+    }
+    for reference_state in ("unknown", "unavailable", None):
+        states = (
+            [SimpleNamespace(entity_id="sensor.activity", state=reference_state)]
+            if reference_state is not None
+            else []
+        )
+        result = evaluate_integration_activity_profiles(
+            states, profiles, entries
+        )
+        assert result["suppressed_entity_ids"] == set()
+        assert result["profiles"][0]["status"] == "monitoring"
+
+
+def test_integration_profile_ignores_reference_from_another_entry():
+    entries = [
+        SimpleNamespace(
+            entity_id="sensor.activity",
+            config_entry_id="entry-2",
+            platform="roomba",
+            disabled_by=None,
+        ),
+        SimpleNamespace(
+            entity_id="sensor.battery",
+            config_entry_id="entry-1",
+            platform="roomba",
+            disabled_by=None,
+        ),
+    ]
+    result = evaluate_integration_activity_profiles(
+        [SimpleNamespace(entity_id="sensor.activity", state="docked")],
+        {
+            "entry-1": {
+                "reference_entity": "sensor.activity",
+                "inactive_states": ["docked"],
+            }
+        },
+        entries,
+    )
+    assert result["suppressed_entity_ids"] == set()
+    assert result["profiles"] == []
+
+
+
+def test_integration_metadata_is_available_without_device_registration():
+    entities = [
+        SimpleNamespace(
+            entity_id="media_player.salon_apel_tivi",
+            device_id=None,
+            platform="apple_tv",
+        )
+    ]
+
+    metadata = collect_device_metadata(entities, [])
+
+    assert metadata == {
+        "media_player.salon_apel_tivi": {"platform": "apple_tv"}
+    }
+
+
+def test_unavailable_finding_includes_integration_for_entity_without_device():
+    now = datetime(2026, 11, 17, 10, 0, tzinfo=UTC)
+    state = SimpleNamespace(
+        entity_id="media_player.salon_apel_tivi",
+        state="unavailable",
+        name="Apple TV",
+        last_changed=now - timedelta(minutes=5),
+    )
+    metadata = {
+        "media_player.salon_apel_tivi": {"platform": "apple_tv"}
+    }
+
+    result = collect_unavailable(
+        [state], set(), now, timedelta(minutes=2), metadata
+    )
+
+    assert result[0]["platform"] == "apple_tv"

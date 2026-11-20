@@ -19,17 +19,19 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 from .const import (
     CONF_AVAILABILITY_PROFILES,
     CONF_EXCLUDED_ENTITIES,
+    CONF_INTEGRATION_AVAILABILITY_PROFILES,
     DOMAIN,
     SERVICE_RESET_FRESHNESS_LEARNING,
     SERVICE_SCAN_NOW,
     SERVICE_SET_AVAILABILITY_PROFILE,
     SERVICE_SET_ENTITY_EXCLUDED,
+    SERVICE_SET_INTEGRATION_AVAILABILITY_PROFILE,
 )
 from .coordinator import HealthMonitorCoordinator
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
 CARD_DIR = Path(__file__).parent / "www"
-CARD_URL = "/ha_health_monitor/ha-health-monitor-card.js?v=0.1.6"
+CARD_URL = "/ha_health_monitor/ha-health-monitor-card.js?v=0.1.7"
 
 type HealthMonitorConfigEntry = ConfigEntry[HealthMonitorCoordinator]
 
@@ -197,6 +199,65 @@ async def async_setup_entry(
                 }
             ),
         )
+
+    async def handle_set_integration_availability_profile(call: ServiceCall) -> None:
+        """Configure or remove activity-based monitoring for an integration."""
+        config_entry_id = call.data["config_entry_id"]
+        options = dict(entry.options)
+        profiles = dict(
+            options.get(CONF_INTEGRATION_AVAILABILITY_PROFILES, {})
+        )
+        if call.data.get("remove", False):
+            profiles.pop(config_entry_id, None)
+        else:
+            integration_entry = hass.config_entries.async_get_entry(
+                config_entry_id
+            )
+            reference = call.data.get("reference_entity")
+            registry_entry = er.async_get(hass).async_get(reference)
+            if (
+                integration_entry is None
+                or registry_entry is None
+                or registry_entry.config_entry_id != config_entry_id
+                or registry_entry.platform != integration_entry.domain
+            ):
+                raise HomeAssistantError(
+                    "The reference entity must belong to the selected integration"
+                )
+            inactive = [
+                value.strip()
+                for value in call.data.get("inactive_states", "").split(",")
+                if value.strip()
+            ]
+            if not inactive:
+                raise HomeAssistantError(
+                    "Provide at least one explicit inactive state"
+                )
+            profiles[config_entry_id] = {
+                "domain": integration_entry.domain,
+                "title": integration_entry.title,
+                "reference_entity": reference,
+                "inactive_states": sorted(set(inactive)),
+            }
+        options[CONF_INTEGRATION_AVAILABILITY_PROFILES] = profiles
+        hass.config_entries.async_update_entry(entry, options=options)
+
+    if not hass.services.has_service(
+        DOMAIN, SERVICE_SET_INTEGRATION_AVAILABILITY_PROFILE
+    ):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_SET_INTEGRATION_AVAILABILITY_PROFILE,
+            handle_set_integration_availability_profile,
+            schema=vol.Schema(
+                {
+                    vol.Required("config_entry_id"): cv.string,
+                    vol.Optional("remove", default=False): cv.boolean,
+                    vol.Optional("reference_entity"): cv.entity_id,
+                    vol.Optional("inactive_states", default=""): cv.string,
+                }
+            ),
+        )
     return True
 
 
@@ -219,6 +280,7 @@ async def async_unload_entry(
             SERVICE_RESET_FRESHNESS_LEARNING,
             SERVICE_SET_ENTITY_EXCLUDED,
             SERVICE_SET_AVAILABILITY_PROFILE,
+            SERVICE_SET_INTEGRATION_AVAILABILITY_PROFILE,
         ):
             if hass.services.has_service(DOMAIN, service):
                 hass.services.async_remove(DOMAIN, service)

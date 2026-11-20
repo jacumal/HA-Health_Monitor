@@ -23,6 +23,7 @@ from .const import (
     CONF_EXCLUDED_ENTITIES,
     CONF_FRESHNESS_ENTITIES,
     CONF_FRESHNESS_MULTIPLIER,
+    CONF_INTEGRATION_AVAILABILITY_PROFILES,
     CONF_MONITOR_FRESHNESS,
     CONF_SCAN_INTERVAL,
     DEFAULT_FRESHNESS_MULTIPLIER,
@@ -42,6 +43,7 @@ from .monitors.availability import (
     collect_disabled_entities,
     collect_unavailable,
     evaluate_availability_profiles,
+    evaluate_integration_activity_profiles,
 )
 from .monitors.freshness import FreshnessLearner, collect_adaptive_stale
 from .monitors.integrations import collect_integration_health
@@ -51,8 +53,12 @@ _LOGGER = logging.getLogger(__name__)
 AVAILABILITY_GRACE_PERIOD = timedelta(minutes=2)
 FRESHNESS_STORAGE_VERSION = 1
 INCIDENT_STORAGE_VERSION = 1
+METRICS_STORAGE_VERSION = 1
+METRICS_HISTORY_LIMIT = 720
+METRICS_SAMPLE_INTERVAL = timedelta(hours=1)
 FRESHNESS_SAVE_DELAY = 5
 INCIDENT_SAVE_DELAY = 5
+METRICS_SAVE_DELAY = 10
 
 
 class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
@@ -78,8 +84,12 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             INCIDENT_STORAGE_VERSION,
             f"{DOMAIN}_{entry.entry_id}_incidents",
         )
+        self._metrics_store = Store(
+            hass, METRICS_STORAGE_VERSION, f"{DOMAIN}_{entry.entry_id}_metrics"
+        )
         self.learner = FreshnessLearner()
         self._incident_history: list[dict] = []
+        self._metrics_history: list[dict] = []
         self._unsub_state_listener = None
         self._unsub_state_report_listener = None
 
@@ -111,7 +121,23 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
         """Restore persistent state, reconcile selection and subscribe to events."""
         freshness_data = await self._freshness_store.async_load()
         incident_data = await self._incident_store.async_load()
+        metrics_data = await self._metrics_store.async_load()
         self.learner = FreshnessLearner.from_storage(freshness_data)
+        raw_metrics = (
+            metrics_data.get("samples")
+            if isinstance(metrics_data, dict)
+            else None
+        )
+        self._metrics_history = [
+            item for item in raw_metrics
+            if isinstance(item, dict)
+            and isinstance(item.get("timestamp"), str)
+            and dt_util.parse_datetime(item["timestamp"]) is not None
+            and (
+                item.get("health_score") is None
+                or isinstance(item.get("health_score"), (int, float))
+            )
+        ][-METRICS_HISTORY_LIMIT:] if isinstance(raw_metrics, list) else []
         raw_incidents = (
             incident_data.get("incidents")
             if isinstance(incident_data, dict)
@@ -200,6 +226,7 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             self._unsub_state_report_listener = None
         await self._freshness_store.async_save(self.learner.export())
         await self._incident_store.async_save({"incidents": self._incident_history})
+        await self._metrics_store.async_save({"samples": self._metrics_history})
 
     async def _async_update_data(self) -> dict:
         """Build one consistent monitoring, incident and scoring snapshot."""
@@ -232,7 +259,16 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
                 self.options.get(CONF_AVAILABILITY_PROFILES, {}),
                 device_metadata,
             )
-            availability_excluded = excluded | availability_profiles["suppressed_entity_ids"]
+            integration_activity_profiles = evaluate_integration_activity_profiles(
+                states,
+                self.options.get(CONF_INTEGRATION_AVAILABILITY_PROFILES, {}),
+                entity_registry.entities.values(),
+            )
+            availability_excluded = (
+                excluded
+                | availability_profiles["suppressed_entity_ids"]
+                | integration_activity_profiles["suppressed_entity_ids"]
+            )
             unavailable = collect_unavailable(
                 states,
                 availability_excluded,
@@ -243,11 +279,13 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             stale, profiles = collect_adaptive_stale(
                 states,
                 selected,
-                excluded,
+                availability_excluded,
                 self.learner,
                 now,
                 threshold_multiplier,
             )
+            for item in stale:
+                item.update(device_metadata.get(item["entity_id"], {}))
         except (AttributeError, TypeError, ValueError) as err:
             raise UpdateFailed(
                 f"Unable to inspect Home Assistant states: {err}"
@@ -295,19 +333,21 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             availability_eligible_count=eligible_count,
             availability_assessed_count=availability_assessed_count,
             freshness_enabled=freshness_enabled,
-            selected_freshness_count=len(selected),
+            selected_freshness_count=len(selected - availability_excluded),
             freshness_monitoring_count=freshness_monitoring_count,
             integration_eligible_count=integration_health["eligible_count"],
             integration_assessed_count=integration_health["assessed_count"],
             automation_eligible_count=automation_health["eligible_count"],
             automation_assessed_count=automation_health["assessed_count"],
         )
-        return {
+        result = {
             "last_scan": now,
             "unavailable_entities": unavailable,
             "availability_profiles": availability_profiles["profiles"],
+            "integration_activity_profiles": integration_activity_profiles["profiles"],
             "standby_suppressed_entities": sorted(
                 availability_profiles["suppressed_entity_ids"]
+                | integration_activity_profiles["suppressed_entity_ids"]
             ),
             "disabled_entities": disabled_entities,
             "excluded_entities": sorted(
@@ -319,7 +359,7 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             "unknown_entity_count": eligible_count - availability_assessed_count,
             "freshness_enabled": freshness_enabled,
             "freshness_threshold_multiplier": threshold_multiplier,
-            "freshness_entity_count": len(selected),
+            "freshness_entity_count": len(selected - availability_excluded),
             "freshness_learning_count": sum(
                 profile["status"] == "learning" for profile in profiles.values()
             ),
@@ -344,6 +384,29 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             "health_coverage_percent": score["coverage_percent"],
             "health_score_breakdown": score,
         }
+        last_sample = self._metrics_history[-1] if self._metrics_history else None
+        last_sample_at = (
+            dt_util.parse_datetime(last_sample["timestamp"])
+            if last_sample
+            else None
+        )
+        if last_sample_at is None or now - last_sample_at >= METRICS_SAMPLE_INTERVAL:
+            self._metrics_history.append({
+                "timestamp": now.isoformat(),
+                "health_score": score["score"],
+                "coverage_percent": score["coverage_percent"],
+                "active_incidents": len(active_incidents),
+                "unavailable_entities": len(unavailable),
+                "stale_entities": len(stale),
+                "failed_integrations": integration_health["failed_count"],
+                "unavailable_automations": automation_health["unavailable_count"],
+            })
+            self._metrics_history = self._metrics_history[-METRICS_HISTORY_LIMIT:]
+            self._metrics_store.async_delay_save(
+                lambda: {"samples": self._metrics_history}, METRICS_SAVE_DELAY
+            )
+        result["metrics_history"] = self._metrics_history
+        return result
 
     @callback
     def get_issue_count(self) -> int:

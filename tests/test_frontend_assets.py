@@ -53,3 +53,39 @@ def test_card_supports_reversible_manual_entity_exclusions():
     assert "entityPanel" in source
     assert "data-a='more-info'" in source
     assert 'new CustomEvent("hass-more-info"' in source
+
+
+def test_card_labels_issues_with_translated_integration_names():
+    source = CARD.read_text()
+    assert 'integrationName(domain)' in source
+    assert 'hass.localize(key)' in source
+    assert 'entityLabel(entityId,domain)' in source
+    assert (
+        'this.entityLabel(i.entity_id||i.target||"—",i.details&&i.details.platform)'
+        in source
+    )
+    assert 'this.entityLabel(id,typeof x==="object"?x.platform:null)' in source
+
+def test_card_footer_version_matches_manifest_release_candidate():
+    source = CARD.read_text()
+    manifest = (
+        Path(__file__).parents[1]
+        / "custom_components"
+        / "ha_health_monitor"
+        / "manifest.json"
+    )
+    import json
+
+    version = json.loads(manifest.read_text())["version"]
+    assert f"<small>v{version}</small>" in source
+
+def test_card_renders_historical_health_and_period_filters():
+    source = CARD.read_text()
+    assert "sensor.ha_health_monitor_health_history" in source
+    assert "sensor.ha_health_monitor_incident_history" in source
+    assert "statisticsPanel()" in source
+    assert 'data-period=\'24h\'' in source or '["24h","24 h"]' in source
+    assert '["7d","7 d"]' in source
+    assert '["30d","30 d"]' in source
+    assert "occurrence_count" in source
+    assert "health_score" in source

@@ -6,7 +6,7 @@ HA Health Monitor is an open-source Home Assistant integration for local observa
 
 > Requires Home Assistant 2024.11 or newer.
 >
-> **Development status:** early development (0.1.0). The four backend monitor domains, incident lifecycle, bounded persistence and coverage-aware Health Score are implemented and covered by automated CI. The first bundled Hybrid Lovelace card is implemented; CI and real-installation validation are in progress. This is not yet a stable release.
+> **Development status:** early development (0.1.7). The four backend monitor domains, incident lifecycle, bounded persistence and coverage-aware Health Score are implemented and covered by automated CI. The first bundled Hybrid Lovelace card is implemented; CI and real-installation validation are in progress. This is not yet a stable release.
 
 ## Implemented backend
 
@@ -21,6 +21,7 @@ HA Health Monitor is an open-source Home Assistant integration for local observa
 - Integration setup monitoring using public ConfigEntry states.
 - Automation state monitoring for enabled, disabled and persistently unavailable automations.
 - Stable incident IDs, active/resolved lifecycle and bounded history.
+- Persistent hourly health metrics (score, coverage and monitor counts) with a 30-day retention window.
 - Deterministic grouping by explicit correlation keys.
 - Explainable Health Score with category coverage, point breakdown and incident-linked deductions.
 - English and Spanish integration translations.
@@ -96,8 +97,9 @@ Errors deduct more points than warnings. Deductions are capped within each categ
 - Automation trace analysis and deeper automation diagnostics are not implemented.
 - Correlation is explicit-key grouping, not root-cause inference.
 - Acknowledgements, guided remediation and automatic verification of fixes are not implemented.
-- The first Hybrid Lovelace card is bundled **inside this same repository and integration**. Its initial version provides overview and module views, score breakdown, issue details, a visual editor, responsive styling and English/Spanish UI strings.
-- Historical charts, richer evidence-backed recommendations and deeper diagnosis views are not exposed yet because the backend does not currently provide the required history/diagnostic data.
+- The first Hybrid Lovelace card is bundled **inside this same repository and integration**. It provides overview and module views, score breakdown, issue details, a visual editor, responsive styling, historical score chart with 24 h / 7 d / 30 d filters, and English/Spanish UI strings.
+- The custom health history is sampled hourly and retained for 30 days. The chart needs at least two samples in the selected period; after a fresh install it will populate over time.
+- Historical incident counts are calculated from the bounded incident lifecycle store (up to 500 records); this is not an unlimited event warehouse.
 - Real HA OS validation, interaction/accessibility review and release/HACS readiness are still pending.
 
 ## Installation (development)
@@ -125,8 +127,10 @@ Only select entities expected to report regularly. Static, event-driven and batt
 
 - `sensor.ha_health_monitor_health_score`
 - `sensor.ha_health_monitor_health_status`
+- `sensor.ha_health_monitor_health_coverage`
 - `sensor.ha_health_monitor_active_incidents`
 - `sensor.ha_health_monitor_incident_history`
+- `sensor.ha_health_monitor_health_history`
 - `sensor.ha_health_monitor_unavailable_entities`
 - `sensor.ha_health_monitor_stale_entities`
 - `sensor.ha_health_monitor_failed_integrations`
@@ -134,12 +138,17 @@ Only select entities expected to report regularly. Static, event-driven and batt
 - `sensor.ha_health_monitor_last_scan`
 - `binary_sensor.ha_health_monitor_system_has_issues`
 
-The score sensor exposes coverage, status, category breakdown and traceable deductions. The incidents sensor exposes active incidents and correlation groups; the history sensor exposes the latest 50 historical records. The stale sensor exposes per-entity learning status and cadence. The integration and automation sensors expose their respective assessment counts and findings.
+The score sensor exposes coverage, status, category breakdown and traceable deductions. The incidents sensor exposes active incidents and correlation groups; the incident history sensor exposes up to 500 lifecycle records. The health history sensor exposes hourly metric samples for the last 30 days. The stale sensor exposes per-entity learning status and cadence. The integration and automation sensors expose their respective assessment counts and findings.
+
+## Statistics
+
+Operational statistics are exposed as numeric Home Assistant sensors (health score, health coverage, active incidents, unavailable entities, stale entities, failed integrations and unavailable automations). Their measurement state classes allow Home Assistant Recorder to retain and graph current values according to the installation's Recorder settings. In addition, HA Health Monitor stores hourly snapshots of health score, coverage, active incidents and monitor counts in a versioned Home Assistant Store. The history is capped at 720 samples (30 days) and exposed through `sensor.ha_health_monitor_health_history`. The Lovelace overview plots the score and offers 24 h, 7 d and 30 d filters. Resolved and recurring incident counts are derived from the persisted incident lifecycle records (up to 500 records). A new installation needs time to accumulate samples; the chart appears once at least two samples exist in the selected period.
 
 ## Services
 
 - `ha_health_monitor.scan_now`: run an immediate scan.
 - `ha_health_monitor.reset_freshness_learning`: reset one selected entity (optional `entity_id`) or all selected profiles.
+- `ha_health_monitor.set_integration_availability_profile`: pause availability and freshness findings for all enabled entities belonging to one integration config entry while a reference entity reports one of the explicitly configured inactive states. Set `config_entry_id`, `reference_entity` and comma-separated `inactive_states`; set `remove: true` with only the config entry ID to remove the profile. Missing, unknown and unavailable reference states fail open (normal monitoring).
 
 ## Product direction
 

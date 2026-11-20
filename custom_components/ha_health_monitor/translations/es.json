@@ -63,6 +63,12 @@
       },
       "disabled_entities": {
         "name": "Entidades deshabilitadas"
+      },
+      "health_history": {
+        "name": "Histórico de salud"
+      },
+      "health_coverage": {
+        "name": "Cobertura de salud"
       }
     },
     "binary_sensor": {
@@ -98,8 +104,46 @@
           "name": "Excluded",
           "description": "Whether to omit the entity from monitoring."
         }
-      },
-    "set_availability_profile": {"name":"Configurar perfil de disponibilidad del dispositivo","description":"Configura la disponibilidad condicional de un dispositivo.","fields":{"device_id":{"name":"ID del dispositivo"},"reference_entity":{"name":"Entidad de referencia"},"conditional_entities":{"name":"Entidades condicionales"},"inactive_states":{"name":"Estados inactivos"},"remove":{"name":"Eliminar perfil"}}}
+      }
+    },
+    "set_integration_availability_profile": {
+      "name": "Configurar perfil de actividad de integración",
+      "description": "Pausa la supervisión de las entidades de una integración cuando la entidad de referencia indica un estado inactivo explícito.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Integración (entrada de configuración)"
+        },
+        "reference_entity": {
+          "name": "Entidad de referencia de actividad"
+        },
+        "inactive_states": {
+          "name": "Estados inactivos"
+        },
+        "remove": {
+          "name": "Eliminar perfil"
+        }
+      }
+    },
+    "set_availability_profile": {
+      "name": "Configurar perfil de disponibilidad del dispositivo",
+      "description": "Configura la disponibilidad condicional de un dispositivo.",
+      "fields": {
+        "device_id": {
+          "name": "ID del dispositivo"
+        },
+        "reference_entity": {
+          "name": "Entidad de referencia"
+        },
+        "conditional_entities": {
+          "name": "Entidades condicionales"
+        },
+        "inactive_states": {
+          "name": "Estados inactivos"
+        },
+        "remove": {
+          "name": "Eliminar perfil"
+        }
+      }
     }
   }
 }

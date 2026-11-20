@@ -24,6 +24,11 @@ Every phase must preserve the five non-negotiable pillars: real diagnostic usefu
 - [x] Sanitize and bound restored incident history and Freshness profiles.
 - [x] Automated CI: Ruff, JSON/manifest validation and regression tests.
 - [x] Coordinator tests for restore, profile pruning, listener teardown and shutdown persistence.
+- [x] Integration activity profiles scoped to config entries, with fail-open behavior and service configure/remove tests.
+- [x] Coordinator regression test for standby → active → resolved → recurring incident lifecycle.
+- [x] Operational numeric sensors prepared for Home Assistant Recorder/statistics.
+- [x] Persistent hourly health metrics with 30-day retention, restore validation and bounded storage.
+- [x] Regression tests for hourly sampling, persistence and retention.
 - [ ] Real HA OS validation of startup, reload, unload and persistence.
 
 ## Phase 2 — Diagnostics and score hardening
@@ -45,7 +50,7 @@ The card is part of this repository and integration. It will not be a separate c
 - [x] Add incident list and detail view with available backend evidence.
 - [x] Add a graphical card editor with compact/detailed display modes and sensible defaults.
 - [x] Add English/Spanish UI strings and responsive light/dark styling.
-- [ ] Add period controls and charts when the backend exposes valid historical samples.
+- [x] Add historical score chart and 24 h / 7 d / 30 d period controls backed by persistent hourly samples.
 - [ ] Complete keyboard/accessibility review and mobile, tablet and desktop dashboard validation.
 - [ ] Validate frontend resource registration and interactions on a real HA OS installation.
 

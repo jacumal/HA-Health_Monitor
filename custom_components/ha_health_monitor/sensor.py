@@ -27,6 +27,12 @@ ENTITY_DESCRIPTIONS = (
         key="health_status",
         translation_key="health_status",
         icon="mdi:heart-pulse",
+    ),    SensorEntityDescription(
+        key="health_coverage",
+        translation_key="health_coverage",
+        icon="mdi:chart-donut",
+        native_unit_of_measurement="%",
+        state_class=SensorStateClass.MEASUREMENT,
     ),
     SensorEntityDescription(
         key="active_incidents",
@@ -38,6 +44,11 @@ ENTITY_DESCRIPTIONS = (
         key="incident_history",
         translation_key="incident_history",
         icon="mdi:history",
+    ),
+    SensorEntityDescription(
+        key="health_history",
+        translation_key="health_history",
+        icon="mdi:chart-line",
     ),
     SensorEntityDescription(
         key="disabled_entities",
@@ -119,10 +130,14 @@ class HealthMonitorSensor(CoordinatorEntity[HealthMonitorCoordinator], SensorEnt
             return data["health_score"]
         if key == "health_status":
             return data["health_status"]
+        if key == "health_coverage":
+            return data["health_coverage_percent"]
         if key == "active_incidents":
             return len(data["active_incidents"])
         if key == "incident_history":
             return len(data["incident_history"])
+        if key == "health_history":
+            return len(data.get("metrics_history", []))
         if key == "failed_integrations":
             return data["integration_health"]["failed_count"]
         if key == "unavailable_automations":
@@ -153,7 +168,13 @@ class HealthMonitorSensor(CoordinatorEntity[HealthMonitorCoordinator], SensorEnt
         if key == "unavailable_automations":
             return data["automation_health"]
         if key == "incident_history":
-            return {"incidents": data["incident_history"][-50:]}
+            return {"incidents": data["incident_history"][-500:]}
+        if key == "health_history":
+            return {
+                "samples": data.get("metrics_history", []),
+                "retention_hours": 720,
+                "sample_interval_minutes": 60,
+            }
         if key == "disabled_entities":
             return {"entities": data["disabled_entities"]}
         if key == "unavailable_entities":
@@ -165,6 +186,7 @@ class HealthMonitorSensor(CoordinatorEntity[HealthMonitorCoordinator], SensorEnt
                 "excluded_entities": data["excluded_entities"],
                 "grace_period_seconds": data["availability_grace_seconds"],
                 "availability_profiles": data["availability_profiles"],
+                "integration_activity_profiles": data["integration_activity_profiles"],
                 "standby_suppressed_entities": data["standby_suppressed_entities"],
             }
         if key == "stale_entities":
