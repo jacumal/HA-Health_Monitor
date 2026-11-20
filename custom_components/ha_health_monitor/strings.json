@@ -66,6 +66,9 @@
       },
       "health_history": {
         "name": "Health history"
+      },
+      "health_coverage": {
+        "name": "Health coverage"
       }
     },
     "binary_sensor": {
