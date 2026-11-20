@@ -19,7 +19,8 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .const import (
-    CONF_AVAILABILITY_PROFILES,\n    CONF_INTEGRATION_AVAILABILITY_PROFILES,
+    CONF_AVAILABILITY_PROFILES,
+    CONF_INTEGRATION_AVAILABILITY_PROFILES,
     CONF_EXCLUDED_ENTITIES,
     CONF_FRESHNESS_ENTITIES,
     CONF_FRESHNESS_MULTIPLIER,
@@ -41,7 +42,8 @@ from .monitors.availability import (
     collect_device_metadata,
     collect_disabled_entities,
     collect_unavailable,
-    evaluate_availability_profiles,\n    evaluate_integration_activity_profiles,
+    evaluate_availability_profiles,
+    evaluate_integration_activity_profiles,
 )
 from .monitors.freshness import FreshnessLearner, collect_adaptive_stale
 from .monitors.integrations import collect_integration_health
@@ -232,7 +234,16 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
                 self.options.get(CONF_AVAILABILITY_PROFILES, {}),
                 device_metadata,
             )
-            integration_activity_profiles = evaluate_integration_activity_profiles(\n                states,\n                self.options.get(CONF_INTEGRATION_AVAILABILITY_PROFILES, {}),\n                entity_registry.entities.values(),\n            )\n            availability_excluded = (\n                excluded\n                | availability_profiles["suppressed_entity_ids"]\n                | integration_activity_profiles["suppressed_entity_ids"]\n            )
+            integration_activity_profiles = evaluate_integration_activity_profiles(
+                states,
+                self.options.get(CONF_INTEGRATION_AVAILABILITY_PROFILES, {}),
+                entity_registry.entities.values(),
+            )
+            availability_excluded = (
+                excluded
+                | availability_profiles["suppressed_entity_ids"]
+                | integration_activity_profiles["suppressed_entity_ids"]
+            )
             unavailable = collect_unavailable(
                 states,
                 availability_excluded,
@@ -243,7 +254,7 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             stale, profiles = collect_adaptive_stale(
                 states,
                 selected,
-                excluded,
+                availability_excluded,
                 self.learner,
                 now,
                 threshold_multiplier,
@@ -305,9 +316,11 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
         return {
             "last_scan": now,
             "unavailable_entities": unavailable,
-            "availability_profiles": availability_profiles["profiles"],\n            "integration_activity_profiles": integration_activity_profiles["profiles"],
+            "availability_profiles": availability_profiles["profiles"],
+            "integration_activity_profiles": integration_activity_profiles["profiles"],
             "standby_suppressed_entities": sorted(
                 availability_profiles["suppressed_entity_ids"]
+                | integration_activity_profiles["suppressed_entity_ids"]
             ),
             "disabled_entities": disabled_entities,
             "excluded_entities": sorted(
