@@ -6,8 +6,8 @@ from types import SimpleNamespace
 from custom_components.ha_health_monitor.monitors.availability import (
     collect_device_metadata,
     collect_disabled_entities,
-    evaluate_availability_profiles,
     collect_unavailable,
+    evaluate_availability_profiles,
 )
 
 
@@ -87,7 +87,6 @@ def test_disabled_entities_are_listed_with_registry_metadata():
     }
 
 
-
 def test_device_metadata_links_entities_to_registered_devices():
     device = SimpleNamespace(
         id="device-1",
@@ -154,21 +153,66 @@ def test_unavailable_finding_includes_device_context_when_known():
     assert result[0]["platform"] == "washdata"
 
 
-
 def test_profiles_suppress_only_explicit_standby_entities():
-    metadata = {"sensor.run": {"device_id": "d1"}, "sensor.power": {"device_id": "d1"}}
-    profile = {"d1": {"reference_entity": "sensor.run", "conditional_entities": ["sensor.power"], "inactive_states": ["off", "idle"]}}
-    standby = [SimpleNamespace(entity_id="sensor.run", state="off"), SimpleNamespace(entity_id="sensor.power", state="unavailable")]
-    active = [SimpleNamespace(entity_id="sensor.run", state="washing"), SimpleNamespace(entity_id="sensor.power", state="unavailable")]
-    unavailable_reference = [SimpleNamespace(entity_id="sensor.run", state="unavailable"), SimpleNamespace(entity_id="sensor.power", state="unavailable")]
-    assert evaluate_availability_profiles(standby, profile, metadata)["suppressed_entity_ids"] == {"sensor.power"}
-    assert evaluate_availability_profiles(active, profile, metadata)["suppressed_entity_ids"] == set()
-    assert evaluate_availability_profiles(unavailable_reference, profile, metadata)["suppressed_entity_ids"] == set()
+    metadata = {
+        "sensor.run": {"device_id": "d1"},
+        "sensor.power": {"device_id": "d1"},
+    }
+    profile = {
+        "d1": {
+            "reference_entity": "sensor.run",
+            "conditional_entities": ["sensor.power"],
+            "inactive_states": ["off", "idle"],
+        }
+    }
+    standby = [
+        SimpleNamespace(entity_id="sensor.run", state="off"),
+        SimpleNamespace(entity_id="sensor.power", state="unavailable"),
+    ]
+    active = [
+        SimpleNamespace(entity_id="sensor.run", state="washing"),
+        SimpleNamespace(entity_id="sensor.power", state="unavailable"),
+    ]
+    unavailable_reference = [
+        SimpleNamespace(entity_id="sensor.run", state="unavailable"),
+        SimpleNamespace(entity_id="sensor.power", state="unavailable"),
+    ]
+    assert (
+        evaluate_availability_profiles(standby, profile, metadata)[
+            "suppressed_entity_ids"
+        ]
+        == {"sensor.power"}
+    )
+    assert (
+        evaluate_availability_profiles(active, profile, metadata)[
+            "suppressed_entity_ids"
+        ]
+        == set()
+    )
+    assert (
+        evaluate_availability_profiles(unavailable_reference, profile, metadata)[
+            "suppressed_entity_ids"
+        ]
+        == set()
+    )
 
 
 def test_profiles_ignore_entities_from_other_devices():
-    metadata = {"sensor.run": {"device_id": "d1"}, "sensor.other": {"device_id": "d2"}}
-    profile = {"d1": {"reference_entity": "sensor.run", "conditional_entities": ["sensor.other"], "inactive_states": ["off"]}}
-    result = evaluate_availability_profiles([SimpleNamespace(entity_id="sensor.run", state="off")], profile, metadata)
+    metadata = {
+        "sensor.run": {"device_id": "d1"},
+        "sensor.other": {"device_id": "d2"},
+    }
+    profile = {
+        "d1": {
+            "reference_entity": "sensor.run",
+            "conditional_entities": ["sensor.other"],
+            "inactive_states": ["off"],
+        }
+    }
+    result = evaluate_availability_profiles(
+        [SimpleNamespace(entity_id="sensor.run", state="off")],
+        profile,
+        metadata,
+    )
     assert result["conditional_entity_ids"] == set()
     assert result["suppressed_entity_ids"] == set()
