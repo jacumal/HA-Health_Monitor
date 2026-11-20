@@ -63,6 +63,9 @@
       },
       "disabled_entities": {
         "name": "Disabled entities"
+      },
+      "health_history": {
+        "name": "Health history"
       }
     },
     "binary_sensor": {
