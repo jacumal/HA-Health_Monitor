@@ -16,20 +16,23 @@ def collect_device_metadata(
     devices = {device.id: device for device in device_registry_entries}
     metadata = {}
     for entity in entity_registry_entries:
+        platform = getattr(entity, "platform", None)
         device_id = getattr(entity, "device_id", None)
+        metadata[entity.entity_id] = {"platform": platform}
         if device_id is None:
             continue
         device = devices.get(device_id)
         if device is None:
             continue
-        metadata[entity.entity_id] = {
-            "device_id": device.id,
-            "device_name": getattr(device, "name_by_user", None)
-            or getattr(device, "name", None),
-            "manufacturer": getattr(device, "manufacturer", None),
-            "model": getattr(device, "model", None),
-            "platform": getattr(entity, "platform", None),
-        }
+        metadata[entity.entity_id].update(
+            {
+                "device_id": device.id,
+                "device_name": getattr(device, "name_by_user", None)
+                or getattr(device, "name", None),
+                "manufacturer": getattr(device, "manufacturer", None),
+                "model": getattr(device, "model", None),
+            }
+        )
     return metadata
 
 
