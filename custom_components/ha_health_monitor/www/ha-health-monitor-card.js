@@ -57,7 +57,7 @@ class HaHealthMonitorCard extends HTMLElement{
  }
  statisticsPanel(){
  let samples=A(this.attrs("health_history").samples),hours=this.period==="24h"?24:this.period==="7d"?168:720,cutoff=Date.now()-hours*3600000;
- let points=samples.filter(x=>{let t=Date.parse(x.timestamp);return Number.isFinite(t)&&t>=cutoff&&N(x.health_score)!==null;});
+ let points=samples.filter(x=>{let t=Date.parse(x.timestamp);return Number.isFinite(t)&&t>=cutoff&&x.health_score!==null&&N(x.health_score)!==null;});
  let values=points.map(x=>N(x.health_score)),min=values.length?Math.min(...values):0,max=values.length?Math.max(...values):100,span=Math.max(1,max-min);
  let poly=values.map((v,i)=>{let x=values.length<2?160:12+i*296/(values.length-1),y=78-(v-min)/span*62;return x.toFixed(1)+","+y.toFixed(1);}).join(" ");
  let incidents=A(this.attrs("history").incidents),since=Date.now()-hours*3600000;
