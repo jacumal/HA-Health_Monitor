@@ -60,5 +60,8 @@ def test_card_labels_issues_with_translated_integration_names():
     assert 'integrationName(domain)' in source
     assert 'hass.localize(key)' in source
     assert 'entityLabel(entityId,domain)' in source
-    assert 'this.entityLabel(i.entity_id||i.target||"—",i.details&&i.details.platform)' in source
+    assert (
+        'this.entityLabel(i.entity_id||i.target||"—",i.details&&i.details.platform)'
+        in source
+    )
     assert 'this.entityLabel(id,typeof x==="object"?x.platform:null)' in source
