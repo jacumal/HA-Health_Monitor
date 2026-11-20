@@ -195,9 +195,6 @@ async def async_setup_entry(
                     vol.Optional("conditional_entities", default=[]): vol.All(
                         cv.ensure_list, [cv.entity_id]
                     ),
-                    vol.Optional("conditional_entities", default=[]): vol.All(
-                        cv.ensure_list, [cv.entity_id]
-                    ),
                     vol.Optional("inactive_states", default=""): cv.string,
                 }
             ),
@@ -268,7 +265,10 @@ async def async_setup_entry(
                 {
                     vol.Required("config_entry_id"): cv.string,
                     vol.Optional("remove", default=False): cv.boolean,
-                    vol.Optional("reference_entity"): cv.entity_id,
+                    vol.Required("reference_entity"): cv.entity_id,
+                    vol.Optional("conditional_entities", default=[]): vol.All(
+                        cv.ensure_list, [cv.entity_id]
+                    ),
                     vol.Optional("inactive_states", default=""): cv.string,
                 }
             ),
