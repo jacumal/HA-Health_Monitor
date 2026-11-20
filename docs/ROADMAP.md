@@ -24,6 +24,8 @@ Every phase must preserve the five non-negotiable pillars: real diagnostic usefu
 - [x] Sanitize and bound restored incident history and Freshness profiles.
 - [x] Automated CI: Ruff, JSON/manifest validation and regression tests.
 - [x] Coordinator tests for restore, profile pruning, listener teardown and shutdown persistence.
+- [x] Integration activity profiles scoped to config entries, with fail-open behavior and service configure/remove tests.
+- [x] Coordinator regression test for standby → active → resolved → recurring incident lifecycle.
 - [ ] Real HA OS validation of startup, reload, unload and persistence.
 
 ## Phase 2 — Diagnostics and score hardening
