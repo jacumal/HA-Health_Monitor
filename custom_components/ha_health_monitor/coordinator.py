@@ -53,8 +53,12 @@ _LOGGER = logging.getLogger(__name__)
 AVAILABILITY_GRACE_PERIOD = timedelta(minutes=2)
 FRESHNESS_STORAGE_VERSION = 1
 INCIDENT_STORAGE_VERSION = 1
+METRICS_STORAGE_VERSION = 1
+METRICS_HISTORY_LIMIT = 2160
+METRICS_SAMPLE_INTERVAL = timedelta(hours=1)
 FRESHNESS_SAVE_DELAY = 5
 INCIDENT_SAVE_DELAY = 5
+METRICS_SAVE_DELAY = 10
 
 
 class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
@@ -80,8 +84,12 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             INCIDENT_STORAGE_VERSION,
             f"{DOMAIN}_{entry.entry_id}_incidents",
         )
+        self._metrics_store = Store(
+            hass, METRICS_STORAGE_VERSION, f"{DOMAIN}_{entry.entry_id}_metrics"
+        )
         self.learner = FreshnessLearner()
         self._incident_history: list[dict] = []
+        self._metrics_history: list[dict] = []
         self._unsub_state_listener = None
         self._unsub_state_report_listener = None
 
@@ -113,7 +121,15 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
         """Restore persistent state, reconcile selection and subscribe to events."""
         freshness_data = await self._freshness_store.async_load()
         incident_data = await self._incident_store.async_load()
+        metrics_data = await self._metrics_store.async_load()
         self.learner = FreshnessLearner.from_storage(freshness_data)
+        raw_metrics = metrics_data.get("samples") if isinstance(metrics_data, dict) else None
+        self._metrics_history = [
+            item for item in raw_metrics
+            if isinstance(item, dict)
+            and isinstance(item.get("timestamp"), str)
+            and isinstance(item.get("health_score"), (int, float))
+        ][-METRICS_HISTORY_LIMIT:] if isinstance(raw_metrics, list) else []
         raw_incidents = (
             incident_data.get("incidents")
             if isinstance(incident_data, dict)
@@ -202,6 +218,7 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             self._unsub_state_report_listener = None
         await self._freshness_store.async_save(self.learner.export())
         await self._incident_store.async_save({"incidents": self._incident_history})
+        await self._metrics_store.async_save({"samples": self._metrics_history})
 
     async def _async_update_data(self) -> dict:
         """Build one consistent monitoring, incident and scoring snapshot."""
@@ -315,7 +332,7 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             automation_eligible_count=automation_health["eligible_count"],
             automation_assessed_count=automation_health["assessed_count"],
         )
-        return {
+        result = {
             "last_scan": now,
             "unavailable_entities": unavailable,
             "availability_profiles": availability_profiles["profiles"],
@@ -359,6 +376,23 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             "health_coverage_percent": score["coverage_percent"],
             "health_score_breakdown": score,
         }
+        last_sample = self._metrics_history[-1] if self._metrics_history else None
+        last_sample_at = dt_util.parse_datetime(last_sample["timestamp"]) if last_sample else None
+        if last_sample_at is None or now - last_sample_at >= METRICS_SAMPLE_INTERVAL:
+            self._metrics_history.append({
+                "timestamp": now.isoformat(),
+                "health_score": score["score"],
+                "coverage_percent": score["coverage_percent"],
+                "active_incidents": len(active_incidents),
+                "unavailable_entities": len(unavailable),
+                "stale_entities": len(stale),
+                "failed_integrations": integration_health["failed_count"],
+                "unavailable_automations": automation_health["unavailable_count"],
+            })
+            self._metrics_history = self._metrics_history[-METRICS_HISTORY_LIMIT:]
+            self._metrics_store.async_delay_save(lambda: {"samples": self._metrics_history}, METRICS_SAVE_DELAY)
+        result["metrics_history"] = self._metrics_history
+        return result
 
     @callback
     def get_issue_count(self) -> int:
