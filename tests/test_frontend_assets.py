@@ -78,3 +78,14 @@ def test_card_footer_version_matches_manifest_release_candidate():
 
     version = json.loads(manifest.read_text())["version"]
     assert f"<small>v{version}</small>" in source
+
+def test_card_renders_historical_health_and_period_filters():
+    source = CARD.read_text()
+    assert "sensor.ha_health_monitor_health_history" in source
+    assert "sensor.ha_health_monitor_incident_history" in source
+    assert "statisticsPanel()" in source
+    assert 'data-period=\'24h\'' in source or '["24h","24 h"]' in source
+    assert '["7d","7 d"]' in source
+    assert '["30d","30 d"]' in source
+    assert "occurrence_count" in source
+    assert "health_score" in source
