@@ -35,10 +35,10 @@ set_availability_profile:
   description: Configure conditional availability for a device.
   fields:
     device_id:
-      name: Device ID
+      name: Device
       required: true
       selector:
-        text:
+        device:
     reference_entity:
       name: Reference entity
       selector:
