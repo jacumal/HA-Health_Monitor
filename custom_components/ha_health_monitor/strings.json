@@ -99,7 +99,45 @@
           "description": "Whether to omit the entity from monitoring."
         }
       },
-    "set_availability_profile": {"name":"Configure device availability profile","description":"Configure conditional availability for a device.","fields":{"device_id":{"name":"Device ID"},"reference_entity":{"name":"Reference entity"},"conditional_entities":{"name":"Conditional entities"},"inactive_states":{"name":"Inactive states"},"remove":{"name":"Remove profile"}}}
+      "set_availability_profile": {
+        "name": "Configure device availability profile",
+        "description": "Configure conditional availability for a device.",
+        "fields": {
+          "device_id": {
+            "name": "Device ID"
+          },
+          "reference_entity": {
+            "name": "Reference entity"
+          },
+          "conditional_entities": {
+            "name": "Conditional entities"
+          },
+          "inactive_states": {
+            "name": "Inactive states"
+          },
+          "remove": {
+            "name": "Remove profile"
+          }
+        }
+      }
+    },
+    "set_integration_availability_profile": {
+      "name": "Configure integration activity profile",
+      "description": "Pause entity monitoring for one integration while its reference entity reports an explicit inactive state.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Integration config entry"
+        },
+        "reference_entity": {
+          "name": "Activity reference entity"
+        },
+        "inactive_states": {
+          "name": "Inactive states"
+        },
+        "remove": {
+          "name": "Remove profile"
+        }
+      }
     }
   }
 }
