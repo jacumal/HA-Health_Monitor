@@ -19,6 +19,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_AVAILABILITY_PROFILES,
     CONF_EXCLUDED_ENTITIES,
     CONF_FRESHNESS_ENTITIES,
     CONF_FRESHNESS_MULTIPLIER,
@@ -39,6 +40,7 @@ from .monitors.automations import collect_automation_health
 from .monitors.availability import (
     collect_device_metadata,
     collect_disabled_entities,
+    evaluate_availability_profiles,
     collect_unavailable,
 )
 from .monitors.freshness import FreshnessLearner, collect_adaptive_stale
@@ -225,13 +227,9 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             device_metadata = collect_device_metadata(
                 entity_registry.entities.values(), device_registry.devices.values()
             )
-            unavailable = collect_unavailable(
-                states,
-                excluded,
-                now,
-                AVAILABILITY_GRACE_PERIOD,
-                device_metadata,
-            )
+            availability_profiles = evaluate_availability_profiles(states, self.options.get(CONF_AVAILABILITY_PROFILES, {}), device_metadata)
+            availability_excluded = excluded | availability_profiles["suppressed_entity_ids"]
+            unavailable = collect_unavailable(states, availability_excluded, now, AVAILABILITY_GRACE_PERIOD, device_metadata)
             stale, profiles = collect_adaptive_stale(
                 states,
                 selected,
@@ -268,11 +266,8 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             if incident.get("status") == "active"
         ]
         correlation_groups = correlate_incidents(active_incidents)
-        eligible_count = sum(state.entity_id not in excluded for state in states)
-        availability_assessed_count = sum(
-            state.entity_id not in excluded and state.state != "unknown"
-            for state in states
-        )
+        eligible_count = sum(state.entity_id not in availability_excluded for state in states)
+        availability_assessed_count = sum(state.entity_id not in availability_excluded and state.state != "unknown" for state in states)
         freshness_monitoring_count = sum(
             profile["status"] == "monitoring" for profile in profiles.values()
         )
@@ -294,6 +289,8 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
         return {
             "last_scan": now,
             "unavailable_entities": unavailable,
+            "availability_profiles": availability_profiles["profiles"],
+            "standby_suppressed_entities": sorted(availability_profiles["suppressed_entity_ids"]),
             "disabled_entities": disabled_entities,
             "excluded_entities": sorted(
                 self.options.get(CONF_EXCLUDED_ENTITIES, [])
