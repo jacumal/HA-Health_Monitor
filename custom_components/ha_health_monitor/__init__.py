@@ -17,12 +17,12 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from .const import (
-    CONF_AVAILABILITY_PROFILES,
+    CONF_AVAILABILITY_PROFILES,\n    CONF_INTEGRATION_AVAILABILITY_PROFILES,
     CONF_EXCLUDED_ENTITIES,
     DOMAIN,
     SERVICE_RESET_FRESHNESS_LEARNING,
     SERVICE_SCAN_NOW,
-    SERVICE_SET_AVAILABILITY_PROFILE,
+    SERVICE_SET_AVAILABILITY_PROFILE,\n    SERVICE_SET_INTEGRATION_AVAILABILITY_PROFILE,
     SERVICE_SET_ENTITY_EXCLUDED,
 )
 from .coordinator import HealthMonitorCoordinator
@@ -183,7 +183,7 @@ async def async_setup_entry(
     if not hass.services.has_service(DOMAIN, SERVICE_SET_AVAILABILITY_PROFILE):
         hass.services.async_register(
             DOMAIN,
-            SERVICE_SET_AVAILABILITY_PROFILE,
+            SERVICE_SET_AVAILABILITY_PROFILE,\n            SERVICE_SET_INTEGRATION_AVAILABILITY_PROFILE,
             handle_set_availability_profile,
             schema=vol.Schema(
                 {
