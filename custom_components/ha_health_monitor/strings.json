@@ -121,7 +121,7 @@
     },
     "set_integration_availability_profile": {
       "name": "Configure integration activity profile",
-      "description": "Pause entity monitoring for one integration while its reference entity reports an explicit inactive state.",
+      "description": "Ignore only selected conditional entities while the reference entity reports an explicit inactive state.",
       "fields": {
         "config_entry_id": {
           "name": "Integration config entry"
@@ -134,6 +134,10 @@
         },
         "remove": {
           "name": "Remove profile"
+        },
+        "conditional_entities": {
+          "name": "Conditional entities",
+          "description": "Only these entities are ignored while the reference entity is inactive."
         }
       }
     },
