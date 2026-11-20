@@ -53,3 +53,12 @@ def test_card_supports_reversible_manual_entity_exclusions():
     assert "entityPanel" in source
     assert "data-a='more-info'" in source
     assert 'new CustomEvent("hass-more-info"' in source
+
+
+def test_card_labels_issues_with_translated_integration_names():
+    source = CARD.read_text()
+    assert 'integrationName(domain)' in source
+    assert 'hass.localize(key)' in source
+    assert 'entityLabel(entityId,domain)' in source
+    assert 'this.entityLabel(i.entity_id||i.target||"—",i.details&&i.details.platform)' in source
+    assert 'this.entityLabel(id,typeof x==="object"?x.platform:null)' in source
