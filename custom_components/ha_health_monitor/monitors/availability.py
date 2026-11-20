@@ -157,7 +157,9 @@ def evaluate_integration_activity_profiles(
             continue
         reference = profile.get("reference_entity")
         inactive = profile.get("inactive_states", [])
-        reference_entry = entries.get(reference) if isinstance(reference, str) else None
+        reference_entry = (
+            entries.get(reference) if isinstance(reference, str) else None
+        )
         if (
             reference_entry is None
             or reference_entry.config_entry_id != config_entry_id
@@ -184,15 +186,19 @@ def evaluate_integration_activity_profiles(
         )
         if standby:
             suppressed_ids.update(integration_entities)
-        statuses.append({
-            "config_entry_id": config_entry_id,
-            "integration": reference_entry.platform,
-            "reference_entity": reference,
-            "reference_state": reference_state,
-            "conditional_entity_count": len(integration_entities),
-            "suppressed_entities": sorted(integration_entities) if standby else [],
-            "status": "standby" if standby else "monitoring",
-        })
+        statuses.append(
+            {
+                "config_entry_id": config_entry_id,
+                "integration": reference_entry.platform,
+                "reference_entity": reference,
+                "reference_state": reference_state,
+                "conditional_entity_count": len(integration_entities),
+                "suppressed_entities": (
+                    sorted(integration_entities) if standby else []
+                ),
+                "status": "standby" if standby else "monitoring",
+            }
+        )
     return {
         "conditional_entity_ids": conditional_ids,
         "suppressed_entity_ids": suppressed_ids,
