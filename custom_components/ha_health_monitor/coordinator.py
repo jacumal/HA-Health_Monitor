@@ -306,7 +306,7 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             availability_eligible_count=eligible_count,
             availability_assessed_count=availability_assessed_count,
             freshness_enabled=freshness_enabled,
-            selected_freshness_count=len(selected),
+            selected_freshness_count=len(selected - availability_excluded),
             freshness_monitoring_count=freshness_monitoring_count,
             integration_eligible_count=integration_health["eligible_count"],
             integration_assessed_count=integration_health["assessed_count"],
@@ -332,7 +332,7 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             "unknown_entity_count": eligible_count - availability_assessed_count,
             "freshness_enabled": freshness_enabled,
             "freshness_threshold_multiplier": threshold_multiplier,
-            "freshness_entity_count": len(selected),
+            "freshness_entity_count": len(selected - availability_excluded),
             "freshness_learning_count": sum(
                 profile["status"] == "learning" for profile in profiles.values()
             ),
