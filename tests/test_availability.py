@@ -7,7 +7,8 @@ from custom_components.ha_health_monitor.monitors.availability import (
     collect_device_metadata,
     collect_disabled_entities,
     collect_unavailable,
-    evaluate_availability_profiles,\n    evaluate_integration_activity_profiles,
+    evaluate_availability_profiles,
+    evaluate_integration_activity_profiles,
 )
 
 
