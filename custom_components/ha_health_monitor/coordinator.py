@@ -123,7 +123,11 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
         incident_data = await self._incident_store.async_load()
         metrics_data = await self._metrics_store.async_load()
         self.learner = FreshnessLearner.from_storage(freshness_data)
-        raw_metrics = metrics_data.get("samples") if isinstance(metrics_data, dict) else None
+        raw_metrics = (
+            metrics_data.get("samples")
+            if isinstance(metrics_data, dict)
+            else None
+        )
         self._metrics_history = [
             item for item in raw_metrics
             if isinstance(item, dict)
@@ -381,7 +385,11 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             "health_score_breakdown": score,
         }
         last_sample = self._metrics_history[-1] if self._metrics_history else None
-        last_sample_at = dt_util.parse_datetime(last_sample["timestamp"]) if last_sample else None
+        last_sample_at = (
+            dt_util.parse_datetime(last_sample["timestamp"])
+            if last_sample
+            else None
+        )
         if last_sample_at is None or now - last_sample_at >= METRICS_SAMPLE_INTERVAL:
             self._metrics_history.append({
                 "timestamp": now.isoformat(),
@@ -394,7 +402,9 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
                 "unavailable_automations": automation_health["unavailable_count"],
             })
             self._metrics_history = self._metrics_history[-METRICS_HISTORY_LIMIT:]
-            self._metrics_store.async_delay_save(lambda: {"samples": self._metrics_history}, METRICS_SAVE_DELAY)
+            self._metrics_store.async_delay_save(
+                lambda: {"samples": self._metrics_history}, METRICS_SAVE_DELAY
+            )
         result["metrics_history"] = self._metrics_history
         return result
 
