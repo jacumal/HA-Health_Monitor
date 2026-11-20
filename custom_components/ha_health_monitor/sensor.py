@@ -164,6 +164,8 @@ class HealthMonitorSensor(CoordinatorEntity[HealthMonitorCoordinator], SensorEnt
                 "unknown_entity_count": data["unknown_entity_count"],
                 "excluded_entities": data["excluded_entities"],
                 "grace_period_seconds": data["availability_grace_seconds"],
+                "availability_profiles": data["availability_profiles"],
+                "standby_suppressed_entities": data["standby_suppressed_entities"],
             }
         if key == "stale_entities":
             return {
