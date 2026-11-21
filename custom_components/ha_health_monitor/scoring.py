@@ -53,6 +53,29 @@ def calculate_health_score(
             automation_eligible_count, automation_assessed_count
         ),
     }
+    # A finding may be repeated by an upstream collector or restored snapshot.
+    # Deduplicate by stable issue identity, not entity_id: separate rules affecting
+    # the same entity can represent genuinely different problems.
+    unique_incidents: list[dict[str, Any]] = []
+    seen_issue_keys: set[tuple[str, ...]] = set()
+    duplicate_issue_count = 0
+    for issue in active_incidents:
+        issue_id = issue.get("issue_id")
+        if isinstance(issue_id, str) and issue_id:
+            identity = ("issue_id", issue_id)
+        else:
+            identity = (
+                "finding",
+                str(issue.get("category", "")),
+                str(issue.get("rule_id", "")),
+                str(issue.get("entity_id") or issue.get("target") or ""),
+            )
+        if identity in seen_issue_keys:
+            duplicate_issue_count += 1
+            continue
+        seen_issue_keys.add(identity)
+        unique_incidents.append(issue)
+
     breakdown: dict[str, Any] = {}
     deductions_all: list[dict[str, Any]] = []
     assessed_points = earned_points = 0.0
@@ -72,7 +95,7 @@ def calculate_health_score(
         possible = weight * coverage[category] if category_enabled else 0.0
         items = [
             issue
-            for issue in active_incidents
+            for issue in unique_incidents
             if issue.get("category") == category
         ]
         remaining = possible
@@ -163,4 +186,6 @@ def calculate_health_score(
         ],
         "categories": breakdown,
         "deductions": deductions_all,
+        "unique_active_issue_count": len(unique_incidents),
+        "duplicate_active_issue_count": duplicate_issue_count,
     }

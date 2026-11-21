@@ -313,6 +313,16 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             incident for incident in self._incident_history
             if incident.get("status") == "active"
         ]
+        # Keep availability findings visible in the incident lifecycle, while
+        # exposing them separately from general operational incidents.
+        availability_active_incidents = [
+            issue for issue in active_incidents
+            if issue.get("category") == "availability"
+        ]
+        general_active_incidents = [
+            issue for issue in active_incidents
+            if issue.get("category") != "availability"
+        ]
         correlation_groups = correlate_incidents(active_incidents)
         eligible_count = sum(
             state.entity_id not in availability_excluded for state in states
@@ -378,6 +388,14 @@ class HealthMonitorCoordinator(DataUpdateCoordinator[dict]):
             "automation_health": automation_health,
             "correlation_groups": correlation_groups,
             "active_incidents": active_incidents,
+            "availability_active_incidents": availability_active_incidents,
+            "general_active_incidents": general_active_incidents,
+            "availability_incident_count": len(availability_active_incidents),
+            "general_incident_count": len(general_active_incidents),
+            "total_unique_incident_count": len({
+                issue.get("issue_id") for issue in active_incidents
+                if issue.get("issue_id")
+            }),
             "incident_history": self._incident_history,
             "health_score": score["score"],
             "health_status": score["status"],

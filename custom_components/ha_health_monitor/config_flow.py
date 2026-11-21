@@ -52,63 +52,117 @@ class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
     def __init__(self, config_entry) -> None:
         """Keep the config entry reference for HA 2024.11 compatibility."""
         self._config_entry = config_entry
+        self._pending_options: dict = {}
 
     async def async_step_init(self, user_input=None):
         """Manage monitoring options."""
         if user_input is not None:
-            options = dict(self._config_entry.options)
             values = dict(user_input)
-            config_entry_id = values.pop("activity_profile_config_entry", None)
-            reference = values.pop("activity_profile_reference_entity", None)
-            conditional = values.pop("activity_profile_conditional_entities", [])
-            inactive_raw = values.pop("activity_profile_inactive_states", "off")
-            remove = values.pop("activity_profile_remove", False)
-            options.update(values)
-            if config_entry_id:
-                profiles = dict(options.get(CONF_INTEGRATION_AVAILABILITY_PROFILES, {}))
-                if remove:
-                    profiles.pop(config_entry_id, None)
-                else:
-                    integration_entry = self.hass.config_entries.async_get_entry(
-                        config_entry_id
+            selected_entry_id = values.get("activity_profile_config_entry")
+            saved_profiles = self._config_entry.options.get(
+                CONF_INTEGRATION_AVAILABILITY_PROFILES, {}
+            )
+            selected_profile = saved_profiles.get(selected_entry_id, {})
+            # With several saved profiles, the user first chooses which one to
+            # edit. Re-open the form prefilled with that profile before saving.
+            if (
+                selected_profile
+                and not values.get("activity_profile_remove", False)
+                and (
+                    not values.get("activity_profile_reference_entity")
+                    or not values.get("activity_profile_conditional_entities")
+                )
+            ):
+                self._pending_options = values
+            else:
+                options = dict(self._config_entry.options)
+                config_entry_id = values.pop("activity_profile_config_entry", None)
+                reference = values.pop("activity_profile_reference_entity", None)
+                conditional = values.pop("activity_profile_conditional_entities", [])
+                inactive_raw = values.pop("activity_profile_inactive_states", "off")
+                remove = values.pop("activity_profile_remove", False)
+                options.update(values)
+                if config_entry_id:
+                    profiles = dict(
+                        options.get(CONF_INTEGRATION_AVAILABILITY_PROFILES, {})
                     )
-                    registry = er.async_get(self.hass)
-                    reference_entry = (
-                        registry.async_get(reference) if reference else None
-                    )
-                    inactive = [
-                        value.strip()
-                        for value in str(inactive_raw or "").split(",")
-                        if value.strip()
-                    ]
-                    if (
-                        integration_entry is None
-                        or reference_entry is None
-                        or reference_entry.config_entry_id != config_entry_id
-                        or reference_entry.platform != integration_entry.domain
-                        or not conditional
-                        or not inactive
-                    ):
-                        return self.async_abort(reason="invalid_activity_profile")
-                    for entity_id in conditional:
-                        entity = registry.async_get(entity_id)
+                    if remove:
+                        profiles.pop(config_entry_id, None)
+                    else:
+                        integration_entry = self.hass.config_entries.async_get_entry(
+                            config_entry_id
+                        )
+                        registry = er.async_get(self.hass)
+                        reference_entry = (
+                            registry.async_get(reference) if reference else None
+                        )
+                        inactive = [
+                            value.strip()
+                            for value in str(inactive_raw or "").split(",")
+                            if value.strip()
+                        ]
                         if (
-                            entity is None
-                            or entity.config_entry_id != config_entry_id
-                            or entity_id == reference
+                            integration_entry is None
+                            or reference_entry is None
+                            or reference_entry.config_entry_id != config_entry_id
+                            or reference_entry.platform != integration_entry.domain
+                            or not conditional
+                            or not inactive
                         ):
                             return self.async_abort(reason="invalid_activity_profile")
-                    profiles[config_entry_id] = {
-                        "domain": integration_entry.domain,
-                        "title": integration_entry.title,
-                        "reference_entity": reference,
-                        "conditional_entities": sorted(set(conditional)),
-                        "inactive_states": sorted(set(inactive)),
-                    }
-                options[CONF_INTEGRATION_AVAILABILITY_PROFILES] = profiles
-            return self.async_create_entry(title="", data=options)
+                        for entity_id in conditional:
+                            entity = registry.async_get(entity_id)
+                            if (
+                                entity is None
+                                or entity.config_entry_id != config_entry_id
+                                or entity_id == reference
+                            ):
+                                return self.async_abort(
+                                    reason="invalid_activity_profile"
+                                )
+                        profiles[config_entry_id] = {
+                            "domain": integration_entry.domain,
+                            "title": integration_entry.title,
+                            "reference_entity": reference,
+                            "conditional_entities": sorted(set(conditional)),
+                            "inactive_states": sorted(set(inactive)),
+                        }
+                    options[CONF_INTEGRATION_AVAILABILITY_PROFILES] = profiles
+                self._pending_options = {}
+                return self.async_create_entry(title="", data=options)
 
-        options = self._config_entry.options
+        options = dict(self._config_entry.options)
+        if self._pending_options:
+            options.update(self._pending_options)
+        activity_profiles = options.get(
+            CONF_INTEGRATION_AVAILABILITY_PROFILES, {}
+        )
+        profile_lines = []
+        for profile_id, profile in sorted(activity_profiles.items()):
+            conditional_count = len(profile.get("conditional_entities", []))
+            profile_lines.append(
+                f"• {profile.get('title', profile_id)} — "
+                f"{profile.get('reference_entity', 'sin referencia')}; "
+                f"{conditional_count} entidades condicionales; "
+                f"inactivo: {', '.join(profile.get('inactive_states', []))}"
+            )
+        activity_profiles_summary = (
+            "\n".join(profile_lines)
+            if profile_lines
+            else "No hay perfiles de actividad configurados."
+        )
+        if self._pending_options:
+            existing_profile_id = self._pending_options.get(
+                "activity_profile_config_entry"
+            )
+            existing_profile = activity_profiles.get(existing_profile_id, {})
+        else:
+            single_profile = (
+                next(iter(activity_profiles.items()))
+                if len(activity_profiles) == 1
+                else (None, {})
+            )
+            existing_profile_id, existing_profile = single_profile
         schema = vol.Schema(
             {
                 vol.Optional(
@@ -156,23 +210,33 @@ class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
                         mode=selector.NumberSelectorMode.BOX,
                     )
                 ),
-                vol.Optional("activity_profile_config_entry"): (
-                    selector.ConfigEntrySelector()
+                vol.Optional(
+                    "activity_profile_config_entry",
+                    default=existing_profile_id,
+                ): selector.ConfigEntrySelector(),
+                vol.Optional(
+                    "activity_profile_reference_entity",
+                    default=existing_profile.get("reference_entity"),
+                ): selector.EntitySelector(),
+                vol.Optional(
+                    "activity_profile_conditional_entities",
+                    default=existing_profile.get("conditional_entities", []),
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(multiple=True)
                 ),
-                vol.Optional("activity_profile_reference_entity"): (
-                    selector.EntitySelector()
-                ),
-                vol.Optional("activity_profile_conditional_entities"): (
-                    selector.EntitySelector(
-                        selector.EntitySelectorConfig(multiple=True)
-                    )
-                ),
-                vol.Optional("activity_profile_inactive_states", default="off"): (
-                    selector.TextSelector()
-                ),
+                vol.Optional(
+                    "activity_profile_inactive_states",
+                    default=",".join(existing_profile.get("inactive_states", ["off"])),
+                ): selector.TextSelector(),
                 vol.Optional("activity_profile_remove", default=False): (
                     selector.BooleanSelector()
                 ),
             }
         )
-        return self.async_show_form(step_id="init", data_schema=schema)
+        return self.async_show_form(
+            step_id="init",
+            data_schema=schema,
+            description_placeholders={
+                "activity_profiles_summary": activity_profiles_summary
+            },
+        )

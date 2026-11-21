@@ -14,7 +14,7 @@
     "step": {
       "init": {
         "title": "Monitoring settings",
-        "description": "Choose what to monitor. Freshness learning is local, adaptive and only applies to entities you select.",
+        "description": "Choose what to monitor. Freshness learning is local, adaptive and only applies to entities you select.\n\nConfigured activity profiles:\n%(activity_profiles_summary)s",
         "data": {
           "scan_interval_minutes": "Scan interval",
           "excluded_entities": "Entities to exclude",
@@ -41,7 +41,13 @@
         "name": "Health assessment"
       },
       "active_incidents": {
-        "name": "Active incidents"
+        "name": "Active incidents (all)"
+      },
+      "general_active_incidents": {
+        "name": "General active incidents"
+      },
+      "availability_incidents": {
+        "name": "Availability incidents"
       },
       "incident_history": {
         "name": "Incident history"
