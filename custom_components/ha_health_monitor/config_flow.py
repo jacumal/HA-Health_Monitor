@@ -74,58 +74,58 @@ class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
                 )
             ):
                 self._pending_options = values
-                user_input = None
             else:
                 options = dict(self._config_entry.options)
-                values = dict(user_input)
-            config_entry_id = values.pop("activity_profile_config_entry", None)
-            reference = values.pop("activity_profile_reference_entity", None)
-            conditional = values.pop("activity_profile_conditional_entities", [])
-            inactive_raw = values.pop("activity_profile_inactive_states", "off")
-            remove = values.pop("activity_profile_remove", False)
-            options.update(values)
-            if config_entry_id:
-                profiles = dict(options.get(CONF_INTEGRATION_AVAILABILITY_PROFILES, {}))
-                if remove:
-                    profiles.pop(config_entry_id, None)
-                else:
-                    integration_entry = self.hass.config_entries.async_get_entry(
-                        config_entry_id
+                config_entry_id = values.pop("activity_profile_config_entry", None)
+                reference = values.pop("activity_profile_reference_entity", None)
+                conditional = values.pop("activity_profile_conditional_entities", [])
+                inactive_raw = values.pop("activity_profile_inactive_states", "off")
+                remove = values.pop("activity_profile_remove", False)
+                options.update(values)
+                if config_entry_id:
+                    profiles = dict(
+                        options.get(CONF_INTEGRATION_AVAILABILITY_PROFILES, {})
                     )
-                    registry = er.async_get(self.hass)
-                    reference_entry = (
-                        registry.async_get(reference) if reference else None
-                    )
-                    inactive = [
-                        value.strip()
-                        for value in str(inactive_raw or "").split(",")
-                        if value.strip()
-                    ]
-                    if (
-                        integration_entry is None
-                        or reference_entry is None
-                        or reference_entry.config_entry_id != config_entry_id
-                        or reference_entry.platform != integration_entry.domain
-                        or not conditional
-                        or not inactive
-                    ):
-                        return self.async_abort(reason="invalid_activity_profile")
-                    for entity_id in conditional:
-                        entity = registry.async_get(entity_id)
+                    if remove:
+                        profiles.pop(config_entry_id, None)
+                    else:
+                        integration_entry = self.hass.config_entries.async_get_entry(
+                            config_entry_id
+                        )
+                        registry = er.async_get(self.hass)
+                        reference_entry = (
+                            registry.async_get(reference) if reference else None
+                        )
+                        inactive = [
+                            value.strip()
+                            for value in str(inactive_raw or "").split(",")
+                            if value.strip()
+                        ]
                         if (
-                            entity is None
-                            or entity.config_entry_id != config_entry_id
-                            or entity_id == reference
+                            integration_entry is None
+                            or reference_entry is None
+                            or reference_entry.config_entry_id != config_entry_id
+                            or reference_entry.platform != integration_entry.domain
+                            or not conditional
+                            or not inactive
                         ):
                             return self.async_abort(reason="invalid_activity_profile")
-                    profiles[config_entry_id] = {
-                        "domain": integration_entry.domain,
-                        "title": integration_entry.title,
-                        "reference_entity": reference,
-                        "conditional_entities": sorted(set(conditional)),
-                        "inactive_states": sorted(set(inactive)),
-                    }
-                options[CONF_INTEGRATION_AVAILABILITY_PROFILES] = profiles
+                        for entity_id in conditional:
+                            entity = registry.async_get(entity_id)
+                            if (
+                                entity is None
+                                or entity.config_entry_id != config_entry_id
+                                or entity_id == reference
+                            ):
+                                return self.async_abort(reason="invalid_activity_profile")
+                        profiles[config_entry_id] = {
+                            "domain": integration_entry.domain,
+                            "title": integration_entry.title,
+                            "reference_entity": reference,
+                            "conditional_entities": sorted(set(conditional)),
+                            "inactive_states": sorted(set(inactive)),
+                        }
+                    options[CONF_INTEGRATION_AVAILABILITY_PROFILES] = profiles
                 self._pending_options = {}
                 return self.async_create_entry(title="", data=options)
 
