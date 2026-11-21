@@ -14,20 +14,30 @@
     "step": {
       "init": {
         "title": "Ajustes de monitorización",
-        "description": "Elige qué monitorizar. El aprendizaje de actualizaciones es local, adaptativo y solo se aplica a las entidades seleccionadas.",
+        "description": "Elige qué monitorizar. El aprendizaje de actualizaciones es local, adaptativo y solo se aplica a las entidades seleccionadas.\n\nPerfiles de actividad configurados:\n%(activity_profiles_summary)s",
         "data": {
           "scan_interval_minutes": "Intervalo de análisis",
           "excluded_entities": "Entidades excluidas",
           "monitor_freshness": "Activar monitorización adaptativa de actualizaciones",
           "freshness_entities": "Entidades que se aprenderán y monitorizarán",
-          "freshness_threshold_multiplier": "Multiplicador de tolerancia de actualización"
+          "freshness_threshold_multiplier": "Multiplicador de tolerancia de actualización",
+          "activity_profile_config_entry": "Instancia de integración",
+          "activity_profile_reference_entity": "Entidad de referencia",
+          "activity_profile_conditional_entities": "Entidades condicionales",
+          "activity_profile_inactive_states": "Estados inactivos (separados por comas)",
+          "activity_profile_remove": "Eliminar el perfil de la instancia seleccionada"
         },
         "data_description": {
           "scan_interval_minutes": "Frecuencia con la que se revisan los estados de Home Assistant.",
           "excluded_entities": "Estas entidades se excluyen de los controles de disponibilidad y actualización.",
           "monitor_freshness": "Desactivado por defecto. Solo se observan las entidades seleccionadas. Cada una aprende su propia frecuencia de actualización a partir de comunicaciones reales.",
           "freshness_entities": "Selecciona entidades de tipo sensor o sensor binario que deberían comunicar regularmente. Cada una necesita al menos cinco intervalos válidos antes de detectar retrasos. El aprendizaje depende de la frecuencia de cada entidad.",
-          "freshness_threshold_multiplier": "Tolerancia global manual aplicada a la frecuencia aprendida de cada entidad. Los valores altos son más permisivos y retrasan los avisos; el valor predeterminado es 3,0."
+          "freshness_threshold_multiplier": "Tolerancia global manual aplicada a la frecuencia aprendida de cada entidad. Los valores altos son más permisivos y retrasan los avisos; el valor predeterminado es 3,0.",
+          "activity_profile_config_entry": "Selecciona la instancia de integración que quieres configurar o editar.",
+          "activity_profile_reference_entity": "Sensor que indica si el dispositivo está activo; por ejemplo, En funcionamiento.",
+          "activity_profile_conditional_entities": "Selecciona únicamente las entidades que quedan no disponibles cuando el dispositivo está inactivo. Puedes añadir varias.",
+          "activity_profile_inactive_states": "Estados exactos que indican inactividad; por ejemplo, off.",
+          "activity_profile_remove": "Elimina el perfil de actividad de la instancia seleccionada."
         }
       }
     }
