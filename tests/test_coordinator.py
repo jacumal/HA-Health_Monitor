@@ -348,3 +348,70 @@ async def test_restored_health_metrics_are_bounded_to_thirty_days(hass):
     await coordinator.async_initialize()
     assert len(coordinator._metrics_history) == 720
     await coordinator.async_shutdown()
+
+
+async def test_availability_findings_have_separate_incident_counter(hass, freezer):
+    freezer.move_to("2026-11-21 10:00:00")
+    hass.states.async_set("sensor.availability_counter_test", "unavailable")
+    freezer.tick(delta=timedelta(minutes=3))
+    entry = MockConfigEntry(domain=DOMAIN, data={}, options={})
+    coordinator = HealthMonitorCoordinator(hass, entry)
+
+    data = await coordinator._async_update_data()
+
+    assert len(data["unavailable_entities"]) == 1
+    assert data["availability_incident_count"] == 1
+    assert data["general_incident_count"] == 0
+    assert data["total_unique_incident_count"] == 1
+    assert len(data["active_incidents"]) == 1
+    assert data["active_incidents"][0]["category"] == "availability"
+
+
+async def test_integration_activity_reference_unknown_fails_open(hass, freezer):
+    from custom_components.ha_health_monitor.const import (
+        CONF_INTEGRATION_AVAILABILITY_PROFILES,
+    )
+
+    freezer.move_to("2026-11-21 10:00:00")
+    integration_entry = MockConfigEntry(domain="washdata", title="Washer")
+    integration_entry.add_to_hass(hass)
+    registry = er.async_get(hass)
+    for unique_id, object_id in [
+        ("activity", "washer_activity_unknown"),
+        ("action", "washer_action_unknown"),
+    ]:
+        registry.async_get_or_create(
+            "sensor",
+            "washdata",
+            unique_id,
+            suggested_object_id=object_id,
+            config_entry=integration_entry,
+        )
+    hass.states.async_set("sensor.washer_activity_unknown", "unknown")
+    hass.states.async_set("sensor.washer_action_unknown", "unavailable")
+    freezer.tick(delta=timedelta(minutes=3))
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={},
+        options={
+            CONF_INTEGRATION_AVAILABILITY_PROFILES: {
+                integration_entry.entry_id: {
+                    "domain": "washdata",
+                    "title": "Washer",
+                    "reference_entity": "sensor.washer_activity_unknown",
+                    "conditional_entities": ["sensor.washer_action_unknown"],
+                    "inactive_states": ["off"],
+                }
+            }
+        },
+    )
+    coordinator = HealthMonitorCoordinator(hass, entry)
+    data = await coordinator._async_update_data()
+
+    assert [item["entity_id"] for item in data["unavailable_entities"]] == [
+        "sensor.washer_action_unknown"
+    ]
+    profile = data["integration_activity_profiles"][0]
+    assert profile["status"] == "monitoring"
+    assert profile["suppressed_entities"] == []
