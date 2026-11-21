@@ -109,6 +109,29 @@ class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
             return self.async_create_entry(title="", data=options)
 
         options = self._config_entry.options
+        activity_profiles = options.get(
+            CONF_INTEGRATION_AVAILABILITY_PROFILES, {}
+        )
+        profile_lines = []
+        for profile_id, profile in sorted(activity_profiles.items()):
+            conditional_count = len(profile.get("conditional_entities", []))
+            profile_lines.append(
+                f"• {profile.get('title', profile_id)} — "
+                f"{profile.get('reference_entity', 'sin referencia')}; "
+                f"{conditional_count} entidades condicionales; "
+                f"inactivo: {', '.join(profile.get('inactive_states', []))}"
+            )
+        activity_profiles_summary = (
+            "\n".join(profile_lines)
+            if profile_lines
+            else "No hay perfiles de actividad configurados."
+        )
+        single_profile = (
+            next(iter(activity_profiles.items()))
+            if len(activity_profiles) == 1
+            else (None, {})
+        )
+        existing_profile_id, existing_profile = single_profile
         schema = vol.Schema(
             {
                 vol.Optional(
@@ -156,23 +179,33 @@ class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
                         mode=selector.NumberSelectorMode.BOX,
                     )
                 ),
-                vol.Optional("activity_profile_config_entry"): (
-                    selector.ConfigEntrySelector()
+                vol.Optional(
+                    "activity_profile_config_entry",
+                    default=existing_profile_id,
+                ): selector.ConfigEntrySelector(),
+                vol.Optional(
+                    "activity_profile_reference_entity",
+                    default=existing_profile.get("reference_entity"),
+                ): selector.EntitySelector(),
+                vol.Optional(
+                    "activity_profile_conditional_entities",
+                    default=existing_profile.get("conditional_entities", []),
+                ): selector.EntitySelector(
+                    selector.EntitySelectorConfig(multiple=True)
                 ),
-                vol.Optional("activity_profile_reference_entity"): (
-                    selector.EntitySelector()
-                ),
-                vol.Optional("activity_profile_conditional_entities"): (
-                    selector.EntitySelector(
-                        selector.EntitySelectorConfig(multiple=True)
-                    )
-                ),
-                vol.Optional("activity_profile_inactive_states", default="off"): (
-                    selector.TextSelector()
-                ),
+                vol.Optional(
+                    "activity_profile_inactive_states",
+                    default=",".join(existing_profile.get("inactive_states", ["off"])),
+                ): selector.TextSelector(),
                 vol.Optional("activity_profile_remove", default=False): (
                     selector.BooleanSelector()
                 ),
             }
         )
-        return self.async_show_form(step_id="init", data_schema=schema)
+        return self.async_show_form(
+            step_id="init",
+            data_schema=schema,
+            description_placeholders={
+                "activity_profiles_summary": activity_profiles_summary
+            },
+        )
