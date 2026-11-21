@@ -232,7 +232,8 @@ async def async_setup_entry(
             conditional = call.data.get("conditional_entities", [])
             if not inactive or not conditional:
                 raise HomeAssistantError(
-                    "Select conditional entities and provide at least one inactive state"
+                    "Select conditional entities and provide at least one "
+                    "inactive state"
                 )
             for entity_id in conditional:
                 item = er.async_get(hass).async_get(entity_id)
@@ -242,7 +243,8 @@ async def async_setup_entry(
                     or entity_id == reference
                 ):
                     raise HomeAssistantError(
-                        f"{entity_id} must belong to the selected integration and cannot be the reference entity"
+                        f"{entity_id} must belong to the selected integration "
+                        "and cannot be the reference entity"
                     )
             profiles[config_entry_id] = {
                 "domain": integration_entry.domain,
