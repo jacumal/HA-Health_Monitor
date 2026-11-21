@@ -6,7 +6,7 @@ HA Health Monitor is an open-source Home Assistant integration for local observa
 
 > Requires Home Assistant 2024.11 or newer.
 >
-> **Development status:** early development (0.1.7). The four backend monitor domains, incident lifecycle, bounded persistence and coverage-aware Health Score are implemented and covered by automated CI. The first bundled Hybrid Lovelace card is implemented; CI and real-installation validation are in progress. This is not yet a stable release.
+> **Development status:** beta validation (0.1.9). The four backend monitor domains, incident lifecycle, bounded persistence and coverage-aware Health Score are implemented and covered by automated CI. The first bundled Hybrid Lovelace card is implemented; CI and real-installation validation are in progress. This is not yet a stable release.
 
 ## Implemented backend
 
@@ -20,7 +20,7 @@ HA Health Monitor is an open-source Home Assistant integration for local observa
 - Manual reset of one profile or all configured profiles.
 - Integration setup monitoring using public ConfigEntry states.
 - Automation state monitoring for enabled, disabled and persistently unavailable automations.
-- Stable incident IDs, active/resolved lifecycle and bounded history.
+- Stable incident IDs, active/resolved lifecycle and bounded history.\n- Separate availability-incident, general-incident and total-unique-incident counters.\n- Health Score deduplicates repeated findings by stable issue ID without merging distinct rules on the same entity.
 - Persistent hourly health metrics (score, coverage and monitor counts) with a 30-day retention window.
 - Deterministic grouping by explicit correlation keys.
 - Explainable Health Score with category coverage, point breakdown and incident-linked deductions.
@@ -128,7 +128,7 @@ Only select entities expected to report regularly. Static, event-driven and batt
 - `sensor.ha_health_monitor_health_score`
 - `sensor.ha_health_monitor_health_status`
 - `sensor.ha_health_monitor_health_coverage`
-- `sensor.ha_health_monitor_active_incidents`
+- `sensor.ha_health_monitor_active_incidents` (all active incidents)\n- `sensor.ha_health_monitor_general_active_incidents`\n- `sensor.ha_health_monitor_availability_incidents`
 - `sensor.ha_health_monitor_incident_history`
 - `sensor.ha_health_monitor_health_history`
 - `sensor.ha_health_monitor_unavailable_entities`
