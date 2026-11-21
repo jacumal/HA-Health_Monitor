@@ -41,6 +41,18 @@ ENTITY_DESCRIPTIONS = (
         state_class=SensorStateClass.MEASUREMENT,
     ),
     SensorEntityDescription(
+        key="general_active_incidents",
+        translation_key="general_active_incidents",
+        icon="mdi:alert-decagram-outline",
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    SensorEntityDescription(
+        key="availability_incidents",
+        translation_key="availability_incidents",
+        icon="mdi:lan-disconnect",
+        state_class=SensorStateClass.MEASUREMENT,
+    ),
+    SensorEntityDescription(
         key="incident_history",
         translation_key="incident_history",
         icon="mdi:history",
@@ -134,6 +146,10 @@ class HealthMonitorSensor(CoordinatorEntity[HealthMonitorCoordinator], SensorEnt
             return data["health_coverage_percent"]
         if key == "active_incidents":
             return len(data["active_incidents"])
+        if key == "general_active_incidents":
+            return data["general_incident_count"]
+        if key == "availability_incidents":
+            return data["availability_incident_count"]
         if key == "incident_history":
             return len(data["incident_history"])
         if key == "health_history":
@@ -162,6 +178,19 @@ class HealthMonitorSensor(CoordinatorEntity[HealthMonitorCoordinator], SensorEnt
             return {
                 "incidents": data["active_incidents"],
                 "correlation_groups": data["correlation_groups"],
+                "availability_incident_count": data["availability_incident_count"],
+                "general_incident_count": data["general_incident_count"],
+                "total_unique_incident_count": data["total_unique_incident_count"],
+            }
+        if key == "general_active_incidents":
+            return {
+                "incidents": data["general_active_incidents"],
+                "total_unique_incident_count": data["total_unique_incident_count"],
+            }
+        if key == "availability_incidents":
+            return {
+                "incidents": data["availability_active_incidents"],
+                "total_unique_incident_count": data["total_unique_incident_count"],
             }
         if key == "failed_integrations":
             return data["integration_health"]
