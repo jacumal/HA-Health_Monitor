@@ -131,3 +131,47 @@ def test_empty_freshness_selection_is_not_full_coverage_when_enabled():
     )
     assert result["categories"]["freshness"]["assessment"] == "not_assessed"
     assert result["categories"]["freshness"]["coverage_percent"] == 0
+
+
+def test_duplicate_issue_ids_are_penalized_once_but_distinct_rules_are_not():
+    incidents = [
+        {
+            "issue_id": "same-availability-issue",
+            "category": "availability",
+            "rule_id": "availability.unavailable",
+            "severity": "error",
+            "entity_id": "sensor.shared",
+        },
+        {
+            "issue_id": "same-availability-issue",
+            "category": "availability",
+            "rule_id": "availability.unavailable",
+            "severity": "error",
+            "entity_id": "sensor.shared",
+        },
+        {
+            "issue_id": "different-rule-same-entity",
+            "category": "availability",
+            "rule_id": "availability.other_finding",
+            "severity": "error",
+            "entity_id": "sensor.shared",
+        },
+    ]
+    result = calculate_health_score(
+        incidents,
+        availability_eligible_count=1,
+        availability_assessed_count=1,
+        freshness_enabled=False,
+        selected_freshness_count=0,
+        freshness_monitoring_count=0,
+        integration_eligible_count=1,
+        integration_assessed_count=1,
+        automation_eligible_count=1,
+        automation_assessed_count=1,
+    )
+
+    category = result["categories"]["availability"]
+    assert result["duplicate_active_issue_count"] == 1
+    assert result["unique_active_issue_count"] == 2
+    assert len(category["deductions"]) == 2
+    assert category["deducted_points"] == 12
