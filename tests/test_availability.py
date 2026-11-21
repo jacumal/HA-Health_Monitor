@@ -224,17 +224,44 @@ def test_profiles_ignore_entities_from_other_devices():
 
 def test_integration_profile_suppresses_only_selected_conditional_entities():
     entries = [
-        SimpleNamespace(entity_id="binary_sensor.activity", config_entry_id="entry-1", platform="washdata", disabled_by=None),
-        SimpleNamespace(entity_id="sensor.power", config_entry_id="entry-1", platform="washdata", disabled_by=None),
-        SimpleNamespace(entity_id="button.resume", config_entry_id="entry-1", platform="washdata", disabled_by=None),
-        SimpleNamespace(entity_id="sensor.normal", config_entry_id="entry-1", platform="washdata", disabled_by=None),
-        SimpleNamespace(entity_id="sensor.other", config_entry_id="entry-2", platform="washdata", disabled_by=None),
+        SimpleNamespace(
+            entity_id="binary_sensor.activity",
+            config_entry_id="entry-1",
+            platform="washdata",
+            disabled_by=None,
+        ),
+        SimpleNamespace(
+            entity_id="sensor.power",
+            config_entry_id="entry-1",
+            platform="washdata",
+            disabled_by=None,
+        ),
+        SimpleNamespace(
+            entity_id="button.resume",
+            config_entry_id="entry-1",
+            platform="washdata",
+            disabled_by=None,
+        ),
+        SimpleNamespace(
+            entity_id="sensor.normal",
+            config_entry_id="entry-1",
+            platform="washdata",
+            disabled_by=None,
+        ),
+        SimpleNamespace(
+            entity_id="sensor.other",
+            config_entry_id="entry-2",
+            platform="washdata",
+            disabled_by=None,
+        ),
     ]
-    profiles = {"entry-1": {
-        "reference_entity": "binary_sensor.activity",
-        "conditional_entities": ["sensor.power", "button.resume"],
-        "inactive_states": ["off", "idle"],
-    }}
+    profiles = {
+        "entry-1": {
+            "reference_entity": "binary_sensor.activity",
+            "conditional_entities": ["sensor.power", "button.resume"],
+            "inactive_states": ["off", "idle"],
+        }
+    }
     states = [
         SimpleNamespace(entity_id="binary_sensor.activity", state="off"),
         SimpleNamespace(entity_id="sensor.power", state="unavailable"),
@@ -249,12 +276,28 @@ def test_integration_profile_suppresses_only_selected_conditional_entities():
 
 def test_integration_profile_monitors_conditional_entities_when_active():
     entries = [
-        SimpleNamespace(entity_id="binary_sensor.activity", config_entry_id="entry-1", platform="washdata", disabled_by=None),
-        SimpleNamespace(entity_id="button.resume", config_entry_id="entry-1", platform="washdata", disabled_by=None),
+        SimpleNamespace(
+            entity_id="binary_sensor.activity",
+            config_entry_id="entry-1",
+            platform="washdata",
+            disabled_by=None,
+        ),
+        SimpleNamespace(
+            entity_id="button.resume",
+            config_entry_id="entry-1",
+            platform="washdata",
+            disabled_by=None,
+        ),
     ]
     result = evaluate_integration_activity_profiles(
         [SimpleNamespace(entity_id="binary_sensor.activity", state="on")],
-        {"entry-1": {"reference_entity": "binary_sensor.activity", "conditional_entities": ["button.resume"], "inactive_states": ["off"]}},
+        {
+            "entry-1": {
+                "reference_entity": "binary_sensor.activity",
+                "conditional_entities": ["button.resume"],
+                "inactive_states": ["off"],
+            }
+        },
         entries,
     )
     assert result["suppressed_entity_ids"] == set()
@@ -263,12 +306,27 @@ def test_integration_profile_monitors_conditional_entities_when_active():
 
 def test_integration_profile_without_conditional_entities_suppresses_nothing():
     entries = [
-        SimpleNamespace(entity_id="binary_sensor.activity", config_entry_id="entry-1", platform="washdata", disabled_by=None),
-        SimpleNamespace(entity_id="sensor.power", config_entry_id="entry-1", platform="washdata", disabled_by=None),
+        SimpleNamespace(
+            entity_id="binary_sensor.activity",
+            config_entry_id="entry-1",
+            platform="washdata",
+            disabled_by=None,
+        ),
+        SimpleNamespace(
+            entity_id="sensor.power",
+            config_entry_id="entry-1",
+            platform="washdata",
+            disabled_by=None,
+        ),
     ]
     result = evaluate_integration_activity_profiles(
         [SimpleNamespace(entity_id="binary_sensor.activity", state="off")],
-        {"entry-1": {"reference_entity": "binary_sensor.activity", "inactive_states": ["off"]}},
+        {
+            "entry-1": {
+                "reference_entity": "binary_sensor.activity",
+                "inactive_states": ["off"],
+            }
+        },
         entries,
     )
     assert result["suppressed_entity_ids"] == set()
