@@ -52,12 +52,32 @@ class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
     def __init__(self, config_entry) -> None:
         """Keep the config entry reference for HA 2024.11 compatibility."""
         self._config_entry = config_entry
+        self._pending_options: dict = {}
 
     async def async_step_init(self, user_input=None):
         """Manage monitoring options."""
         if user_input is not None:
-            options = dict(self._config_entry.options)
             values = dict(user_input)
+            selected_entry_id = values.get("activity_profile_config_entry")
+            saved_profiles = self._config_entry.options.get(
+                CONF_INTEGRATION_AVAILABILITY_PROFILES, {}
+            )
+            selected_profile = saved_profiles.get(selected_entry_id, {})
+            # With several saved profiles, the user first chooses which one to
+            # edit. Re-open the form prefilled with that profile before saving.
+            if (
+                selected_profile
+                and not values.get("activity_profile_remove", False)
+                and (
+                    not values.get("activity_profile_reference_entity")
+                    or not values.get("activity_profile_conditional_entities")
+                )
+            ):
+                self._pending_options = values
+                user_input = None
+            else:
+                options = dict(self._config_entry.options)
+                values = dict(user_input)
             config_entry_id = values.pop("activity_profile_config_entry", None)
             reference = values.pop("activity_profile_reference_entity", None)
             conditional = values.pop("activity_profile_conditional_entities", [])
@@ -106,9 +126,12 @@ class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
                         "inactive_states": sorted(set(inactive)),
                     }
                 options[CONF_INTEGRATION_AVAILABILITY_PROFILES] = profiles
-            return self.async_create_entry(title="", data=options)
+                self._pending_options = {}
+                return self.async_create_entry(title="", data=options)
 
-        options = self._config_entry.options
+        options = dict(self._config_entry.options)
+        if self._pending_options:
+            options.update(self._pending_options)
         activity_profiles = options.get(
             CONF_INTEGRATION_AVAILABILITY_PROFILES, {}
         )
@@ -126,12 +149,18 @@ class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
             if profile_lines
             else "No hay perfiles de actividad configurados."
         )
-        single_profile = (
-            next(iter(activity_profiles.items()))
-            if len(activity_profiles) == 1
-            else (None, {})
-        )
-        existing_profile_id, existing_profile = single_profile
+        if self._pending_options:
+            existing_profile_id = self._pending_options.get(
+                "activity_profile_config_entry"
+            )
+            existing_profile = activity_profiles.get(existing_profile_id, {})
+        else:
+            single_profile = (
+                next(iter(activity_profiles.items()))
+                if len(activity_profiles) == 1
+                else (None, {})
+            )
+            existing_profile_id, existing_profile = single_profile
         schema = vol.Schema(
             {
                 vol.Optional(
