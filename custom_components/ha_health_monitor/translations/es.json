@@ -51,7 +51,13 @@
         "name": "Evaluación de salud"
       },
       "active_incidents": {
-        "name": "Incidencias activas"
+        "name": "Incidencias activas (total)"
+      },
+      "general_active_incidents": {
+        "name": "Incidencias generales activas"
+      },
+      "availability_incidents": {
+        "name": "Incidencias de disponibilidad"
       },
       "incident_history": {
         "name": "Historial de incidencias"
