@@ -69,9 +69,13 @@ class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
                 if remove:
                     profiles.pop(config_entry_id, None)
                 else:
-                    integration_entry = self.hass.config_entries.async_get_entry(config_entry_id)
+                    integration_entry = self.hass.config_entries.async_get_entry(
+                        config_entry_id
+                    )
                     registry = er.async_get(self.hass)
-                    reference_entry = registry.async_get(reference) if reference else None
+                    reference_entry = (
+                        registry.async_get(reference) if reference else None
+                    )
                     inactive = [
                         value.strip()
                         for value in str(inactive_raw or "").split(",")
@@ -88,7 +92,11 @@ class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
                         return self.async_abort(reason="invalid_activity_profile")
                     for entity_id in conditional:
                         entity = registry.async_get(entity_id)
-                        if entity is None or entity.config_entry_id != config_entry_id or entity_id == reference:
+                        if (
+                            entity is None
+                            or entity.config_entry_id != config_entry_id
+                            or entity_id == reference
+                        ):
                             return self.async_abort(reason="invalid_activity_profile")
                     profiles[config_entry_id] = {
                         "domain": integration_entry.domain,
@@ -148,13 +156,23 @@ class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
                         mode=selector.NumberSelectorMode.BOX,
                     )
                 ),
-                vol.Optional("activity_profile_config_entry"): selector.ConfigEntrySelector(),
-                vol.Optional("activity_profile_reference_entity"): selector.EntitySelector(),
-                vol.Optional("activity_profile_conditional_entities"): selector.EntitySelector(
-                    selector.EntitySelectorConfig(multiple=True)
+                vol.Optional("activity_profile_config_entry"): (
+                    selector.ConfigEntrySelector()
                 ),
-                vol.Optional("activity_profile_inactive_states", default="off"): selector.TextSelector(),
-                vol.Optional("activity_profile_remove", default=False): selector.BooleanSelector(),
+                vol.Optional("activity_profile_reference_entity"): (
+                    selector.EntitySelector()
+                ),
+                vol.Optional("activity_profile_conditional_entities"): (
+                    selector.EntitySelector(
+                        selector.EntitySelectorConfig(multiple=True)
+                    )
+                ),
+                vol.Optional("activity_profile_inactive_states", default="off"): (
+                    selector.TextSelector()
+                ),
+                vol.Optional("activity_profile_remove", default=False): (
+                    selector.BooleanSelector()
+                ),
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)
