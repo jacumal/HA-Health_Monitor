@@ -87,21 +87,29 @@ async def test_selecting_one_of_multiple_activity_profiles_prefills_edit_form(ha
     flow = await hass.config_entries.options.async_init(entry.entry_id)
     result = await hass.config_entries.options.async_configure(
         flow["flow_id"],
-        user_input={"activity_profile_config_entry": washer.entry_id},
+        user_input={"activity_profile_config_entry": roomba.entry_id},
     )
     assert result["type"] is FlowResultType.FORM
+    defaults = {
+        marker.schema: marker.default()
+        for marker in result["data_schema"].schema
+        if hasattr(marker, "default")
+    }
+    assert defaults["activity_profile_reference_entity"] == "sensor.roomba_phase"
+    assert defaults["activity_profile_conditional_entities"] == ["button.roomba_start"]
+    assert defaults["activity_profile_inactive_states"] == "idle"
 
     result = await hass.config_entries.options.async_configure(
         flow["flow_id"],
         user_input={
-            "activity_profile_config_entry": washer.entry_id,
-            "activity_profile_reference_entity": "sensor.washer_activity",
-            "activity_profile_conditional_entities": ["button.washer_resume"],
-            "activity_profile_inactive_states": "off",
+            "activity_profile_config_entry": roomba.entry_id,
+            "activity_profile_reference_entity": "sensor.roomba_phase",
+            "activity_profile_conditional_entities": ["button.roomba_start"],
+            "activity_profile_inactive_states": "idle",
             "activity_profile_remove": False,
         },
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["data"][CONF_INTEGRATION_AVAILABILITY_PROFILES][washer.entry_id][
+    assert result["data"][CONF_INTEGRATION_AVAILABILITY_PROFILES][roomba.entry_id][
         "conditional_entities"
-    ] == ["button.washer_resume"]
+    ] == ["button.roomba_start"]
