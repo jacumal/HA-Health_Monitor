@@ -117,7 +117,9 @@ class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
                                 or entity.config_entry_id != config_entry_id
                                 or entity_id == reference
                             ):
-                                return self.async_abort(reason="invalid_activity_profile")
+                                return self.async_abort(
+                                    reason="invalid_activity_profile"
+                                )
                         profiles[config_entry_id] = {
                             "domain": integration_entry.domain,
                             "title": integration_entry.title,
