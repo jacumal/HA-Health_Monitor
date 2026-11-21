@@ -180,7 +180,9 @@ def evaluate_integration_activity_profiles(
         }
         conditional_ids.update(valid)
         reference_state_obj = state_by_id.get(reference)
-        reference_state = reference_state_obj.state if reference_state_obj is not None else None
+        reference_state = (
+            reference_state_obj.state if reference_state_obj is not None else None
+        )
         standby = (
             isinstance(reference_state, str)
             and reference_state not in ("unknown", "unavailable")
@@ -188,15 +190,17 @@ def evaluate_integration_activity_profiles(
         )
         if standby:
             suppressed_ids.update(valid)
-        statuses.append({
-            "config_entry_id": config_entry_id,
-            "integration": reference_entry.platform,
-            "reference_entity": reference,
-            "reference_state": reference_state,
-            "conditional_entity_count": len(valid),
-            "suppressed_entities": sorted(valid) if standby else [],
-            "status": "standby" if standby else "monitoring",
-        })
+        statuses.append(
+            {
+                "config_entry_id": config_entry_id,
+                "integration": reference_entry.platform,
+                "reference_entity": reference,
+                "reference_state": reference_state,
+                "conditional_entity_count": len(valid),
+                "suppressed_entities": sorted(valid) if standby else [],
+                "status": "standby" if standby else "monitoring",
+            }
+        )
     return {
         "conditional_entity_ids": conditional_ids,
         "suppressed_entity_ids": suppressed_ids,
