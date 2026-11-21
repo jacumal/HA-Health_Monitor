@@ -214,17 +214,20 @@ class HAHealthMonitorOptionsFlow(config_entries.OptionsFlow):
                 ): selector.ConfigEntrySelector(),
                 vol.Optional(
                     "activity_profile_reference_entity",
-                    default=existing_profile.get("reference_entity"),
+                    default=options.get("activity_profile_reference_entity")
+                    or existing_profile.get("reference_entity"),
                 ): selector.EntitySelector(),
                 vol.Optional(
                     "activity_profile_conditional_entities",
-                    default=existing_profile.get("conditional_entities", []),
+                    default=options.get("activity_profile_conditional_entities")
+                    or existing_profile.get("conditional_entities", []),
                 ): selector.EntitySelector(
                     selector.EntitySelectorConfig(multiple=True)
                 ),
                 vol.Optional(
                     "activity_profile_inactive_states",
-                    default=",".join(existing_profile.get("inactive_states", ["off"])),
+                    default=options.get("activity_profile_inactive_states")
+                    or ",".join(existing_profile.get("inactive_states", ["off"])),
                 ): selector.TextSelector(),
                 vol.Optional("activity_profile_remove", default=False): (
                     selector.BooleanSelector()
