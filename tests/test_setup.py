@@ -56,6 +56,13 @@ async def test_integration_activity_profile_service_configures_and_removes_profi
         suggested_object_id="washer_activity",
         config_entry=integration_entry,
     )
+    er.async_get(hass).async_get_or_create(
+        "sensor",
+        "washdata",
+        "power",
+        suggested_object_id="washer_power",
+        config_entry=integration_entry,
+    )
 
     entry = MockConfigEntry(domain=DOMAIN, data={}, options={})
     entry.add_to_hass(hass)
@@ -68,6 +75,7 @@ async def test_integration_activity_profile_service_configures_and_removes_profi
         {
             "config_entry_id": integration_entry.entry_id,
             "reference_entity": "sensor.washer_activity",
+            "conditional_entities": ["sensor.washer_power"],
             "inactive_states": "off, idle",
         },
         blocking=True,
@@ -77,6 +85,7 @@ async def test_integration_activity_profile_service_configures_and_removes_profi
         integration_entry.entry_id
     ]
     assert profile["reference_entity"] == "sensor.washer_activity"
+    assert profile["conditional_entities"] == ["sensor.washer_power"]
     assert profile["inactive_states"] == ["idle", "off"]
 
     await hass.services.async_call(

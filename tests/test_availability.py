@@ -222,10 +222,10 @@ def test_profiles_ignore_entities_from_other_devices():
 
 
 
-def test_integration_profile_suppresses_every_entity_in_config_entry():
+def test_integration_profile_suppresses_only_selected_conditional_entities():
     entries = [
         SimpleNamespace(
-            entity_id="sensor.activity",
+            entity_id="binary_sensor.activity",
             config_entry_id="entry-1",
             platform="washdata",
             disabled_by=None,
@@ -237,7 +237,13 @@ def test_integration_profile_suppresses_every_entity_in_config_entry():
             disabled_by=None,
         ),
         SimpleNamespace(
-            entity_id="sensor.cycle",
+            entity_id="button.resume",
+            config_entry_id="entry-1",
+            platform="washdata",
+            disabled_by=None,
+        ),
+        SimpleNamespace(
+            entity_id="sensor.normal",
             config_entry_id="entry-1",
             platform="washdata",
             disabled_by=None,
@@ -251,27 +257,79 @@ def test_integration_profile_suppresses_every_entity_in_config_entry():
     ]
     profiles = {
         "entry-1": {
-            "reference_entity": "sensor.activity",
+            "reference_entity": "binary_sensor.activity",
+            "conditional_entities": ["sensor.power", "button.resume"],
             "inactive_states": ["off", "idle"],
         }
     }
     states = [
-        SimpleNamespace(entity_id="sensor.activity", state="idle"),
+        SimpleNamespace(entity_id="binary_sensor.activity", state="off"),
         SimpleNamespace(entity_id="sensor.power", state="unavailable"),
+        SimpleNamespace(entity_id="button.resume", state="unavailable"),
     ]
-
     result = evaluate_integration_activity_profiles(states, profiles, entries)
-
-    assert result["conditional_entity_ids"] == {
-        "sensor.power",
-        "sensor.cycle",
-    }
-    assert result["suppressed_entity_ids"] == {
-        "sensor.power",
-        "sensor.cycle",
-    }
+    assert result["conditional_entity_ids"] == {"sensor.power", "button.resume"}
+    assert result["suppressed_entity_ids"] == {"sensor.power", "button.resume"}
+    assert result["profiles"][0]["conditional_entity_count"] == 2
     assert result["profiles"][0]["status"] == "standby"
 
+
+def test_integration_profile_monitors_conditional_entities_when_active():
+    entries = [
+        SimpleNamespace(
+            entity_id="binary_sensor.activity",
+            config_entry_id="entry-1",
+            platform="washdata",
+            disabled_by=None,
+        ),
+        SimpleNamespace(
+            entity_id="button.resume",
+            config_entry_id="entry-1",
+            platform="washdata",
+            disabled_by=None,
+        ),
+    ]
+    result = evaluate_integration_activity_profiles(
+        [SimpleNamespace(entity_id="binary_sensor.activity", state="on")],
+        {
+            "entry-1": {
+                "reference_entity": "binary_sensor.activity",
+                "conditional_entities": ["button.resume"],
+                "inactive_states": ["off"],
+            }
+        },
+        entries,
+    )
+    assert result["suppressed_entity_ids"] == set()
+    assert result["profiles"][0]["status"] == "monitoring"
+
+
+def test_integration_profile_without_conditional_entities_suppresses_nothing():
+    entries = [
+        SimpleNamespace(
+            entity_id="binary_sensor.activity",
+            config_entry_id="entry-1",
+            platform="washdata",
+            disabled_by=None,
+        ),
+        SimpleNamespace(
+            entity_id="sensor.power",
+            config_entry_id="entry-1",
+            platform="washdata",
+            disabled_by=None,
+        ),
+    ]
+    result = evaluate_integration_activity_profiles(
+        [SimpleNamespace(entity_id="binary_sensor.activity", state="off")],
+        {
+            "entry-1": {
+                "reference_entity": "binary_sensor.activity",
+                "inactive_states": ["off"],
+            }
+        },
+        entries,
+    )
+    assert result["suppressed_entity_ids"] == set()
 
 def test_integration_profile_fails_open_for_unknown_reference_state():
     entries = [

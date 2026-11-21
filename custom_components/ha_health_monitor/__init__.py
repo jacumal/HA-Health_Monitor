@@ -31,7 +31,7 @@ from .coordinator import HealthMonitorCoordinator
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
 CARD_DIR = Path(__file__).parent / "www"
-CARD_URL = "/ha_health_monitor/ha-health-monitor-card.js?v=0.1.7"
+CARD_URL = "/ha_health_monitor/ha-health-monitor-card.js?v=0.1.8"
 
 type HealthMonitorConfigEntry = ConfigEntry[HealthMonitorCoordinator]
 
@@ -229,14 +229,28 @@ async def async_setup_entry(
                 for value in call.data.get("inactive_states", "").split(",")
                 if value.strip()
             ]
-            if not inactive:
+            conditional = call.data.get("conditional_entities", [])
+            if not inactive or not conditional:
                 raise HomeAssistantError(
-                    "Provide at least one explicit inactive state"
+                    "Select conditional entities and provide at least one "
+                    "inactive state"
                 )
+            for entity_id in conditional:
+                item = er.async_get(hass).async_get(entity_id)
+                if (
+                    item is None
+                    or item.config_entry_id != config_entry_id
+                    or entity_id == reference
+                ):
+                    raise HomeAssistantError(
+                        f"{entity_id} must belong to the selected integration "
+                        "and cannot be the reference entity"
+                    )
             profiles[config_entry_id] = {
                 "domain": integration_entry.domain,
                 "title": integration_entry.title,
                 "reference_entity": reference,
+                "conditional_entities": sorted(set(conditional)),
                 "inactive_states": sorted(set(inactive)),
             }
         options[CONF_INTEGRATION_AVAILABILITY_PROFILES] = profiles
@@ -254,6 +268,9 @@ async def async_setup_entry(
                     vol.Required("config_entry_id"): cv.string,
                     vol.Optional("remove", default=False): cv.boolean,
                     vol.Optional("reference_entity"): cv.entity_id,
+                    vol.Optional("conditional_entities", default=[]): vol.All(
+                        cv.ensure_list, [cv.entity_id]
+                    ),
                     vol.Optional("inactive_states", default=""): cv.string,
                 }
             ),

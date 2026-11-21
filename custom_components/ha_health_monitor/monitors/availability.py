@@ -145,10 +145,9 @@ def evaluate_integration_activity_profiles(
     profiles: dict[str, dict],
     entity_registry_entries: Iterable,
 ) -> dict:
-    """Suppress all entities from a config entry only in explicit inactive states.
+    """Suppress only explicitly selected conditional entities while inactive.
 
-    Profiles are keyed by config_entry_id. Unknown, unavailable or missing
-    reference states fail open and keep the integration fully monitored.
+    Unknown, unavailable or missing reference states fail open.
     """
     state_by_id = {state.entity_id: state for state in states}
     entries = {entry.entity_id: entry for entry in entity_registry_entries}
@@ -160,24 +159,26 @@ def evaluate_integration_activity_profiles(
             continue
         reference = profile.get("reference_entity")
         inactive = profile.get("inactive_states", [])
-        reference_entry = (
-            entries.get(reference) if isinstance(reference, str) else None
-        )
+        configured_entities = profile.get("conditional_entities", [])
+        reference_entry = entries.get(reference) if isinstance(reference, str) else None
         if (
             reference_entry is None
             or reference_entry.config_entry_id != config_entry_id
             or not isinstance(inactive, list)
             or not inactive
+            or not isinstance(configured_entities, list)
         ):
             continue
-        integration_entities = {
+        valid = {
             entity_id
-            for entity_id, entry in entries.items()
-            if entry.config_entry_id == config_entry_id
+            for entity_id in configured_entities
+            if isinstance(entity_id, str)
             and entity_id != reference
-            and getattr(entry, "disabled_by", None) is None
+            and entity_id in entries
+            and entries[entity_id].config_entry_id == config_entry_id
+            and getattr(entries[entity_id], "disabled_by", None) is None
         }
-        conditional_ids.update(integration_entities)
+        conditional_ids.update(valid)
         reference_state_obj = state_by_id.get(reference)
         reference_state = (
             reference_state_obj.state if reference_state_obj is not None else None
@@ -188,17 +189,15 @@ def evaluate_integration_activity_profiles(
             and reference_state in inactive
         )
         if standby:
-            suppressed_ids.update(integration_entities)
+            suppressed_ids.update(valid)
         statuses.append(
             {
                 "config_entry_id": config_entry_id,
                 "integration": reference_entry.platform,
                 "reference_entity": reference,
                 "reference_state": reference_state,
-                "conditional_entity_count": len(integration_entities),
-                "suppressed_entities": (
-                    sorted(integration_entities) if standby else []
-                ),
+                "conditional_entity_count": len(valid),
+                "suppressed_entities": sorted(valid) if standby else [],
                 "status": "standby" if standby else "monitoring",
             }
         )

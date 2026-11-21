@@ -13,23 +13,36 @@
   "options": {
     "step": {
       "init": {
-        "title": "Monitoring settings",
-        "description": "Choose what to monitor. Freshness learning is local, adaptive and only applies to entities you select.",
+        "title": "Monitoring settings and conditional entities",
+        "description": "Choose what to monitor and configure integration activity profiles. Only selected conditional entities are ignored while a reference entity is inactive.",
         "data": {
           "scan_interval_minutes": "Scan interval",
           "excluded_entities": "Entities to exclude",
           "monitor_freshness": "Enable adaptive freshness monitoring",
           "freshness_entities": "Entities to learn and monitor",
-          "freshness_threshold_multiplier": "Freshness tolerance multiplier"
+          "freshness_threshold_multiplier": "Freshness tolerance multiplier",
+          "activity_profile_config_entry": "Integration for activity profile",
+          "activity_profile_reference_entity": "Activity reference entity",
+          "activity_profile_conditional_entities": "Conditional entities to ignore",
+          "activity_profile_inactive_states": "Inactive states (comma-separated)",
+          "activity_profile_remove": "Remove selected activity profile"
         },
         "data_description": {
           "scan_interval_minutes": "How often Home Assistant state is checked.",
           "excluded_entities": "These entities are excluded from availability and freshness checks.",
           "monitor_freshness": "Disabled by default. Only selected entities are observed. Each entity learns its own update cadence from real reports.",
           "freshness_entities": "Select sensor or binary sensor entities expected to report regularly. Each needs at least five valid intervals before stale detection starts. The learning period depends on the entity.",
-          "freshness_threshold_multiplier": "Manual global tolerance applied to each entity's learned cadence. Higher values are more tolerant and delay stale warnings; default is 3.0."
+          "freshness_threshold_multiplier": "Manual global tolerance applied to each entity's learned cadence. Higher values are more tolerant and delay stale warnings; default is 3.0.",
+          "activity_profile_config_entry": "Choose the integration instance whose conditional entities you want to manage.",
+          "activity_profile_reference_entity": "For example, the binary sensor that indicates whether the washer is running.",
+          "activity_profile_conditional_entities": "Select only entities expected to be unavailable when the device is idle. All other entities remain monitored.",
+          "activity_profile_inactive_states": "Exact states that mean inactive, for example off or idle.",
+          "activity_profile_remove": "Remove the profile for the selected integration instance."
         }
       }
+    },
+    "abort": {
+      "invalid_activity_profile": "The selected integration, reference entity, conditional entities or inactive states are invalid."
     }
   },
   "entity": {
@@ -108,7 +121,7 @@
     },
     "set_integration_availability_profile": {
       "name": "Configure integration activity profile",
-      "description": "Pause entity monitoring for one integration while its reference entity reports an explicit inactive state.",
+      "description": "Ignore only selected conditional entities while the reference entity reports an explicit inactive state.",
       "fields": {
         "config_entry_id": {
           "name": "Integration config entry"
@@ -121,6 +134,10 @@
         },
         "remove": {
           "name": "Remove profile"
+        },
+        "conditional_entities": {
+          "name": "Conditional entities",
+          "description": "Only these entities are ignored while the reference entity is inactive."
         }
       }
     },

@@ -271,6 +271,7 @@ async def test_integration_activity_profile_pauses_and_resumes_incident_lifecycl
                     "domain": "washdata",
                     "title": "Washer",
                     "reference_entity": "sensor.washer_activity",
+                    "conditional_entities": ["sensor.washer_power"],
                     "inactive_states": ["off", "idle"],
                 }
             }

@@ -148,7 +148,7 @@ Operational statistics are exposed as numeric Home Assistant sensors (health sco
 
 - `ha_health_monitor.scan_now`: run an immediate scan.
 - `ha_health_monitor.reset_freshness_learning`: reset one selected entity (optional `entity_id`) or all selected profiles.
-- `ha_health_monitor.set_integration_availability_profile`: pause availability and freshness findings for all enabled entities belonging to one integration config entry while a reference entity reports one of the explicitly configured inactive states. Set `config_entry_id`, `reference_entity` and comma-separated `inactive_states`; set `remove: true` with only the config entry ID to remove the profile. Missing, unknown and unavailable reference states fail open (normal monitoring).
+- `ha_health_monitor.set_integration_availability_profile`: suppress availability and freshness findings only for explicitly selected conditional entities belonging to one integration config entry while a reference entity reports one of the explicitly configured inactive states. Set `config_entry_id`, `reference_entity` and comma-separated `inactive_states`; set `remove: true` with only the config entry ID to remove the profile. Missing, unknown and unavailable reference states fail open (normal monitoring).
 
 ## Product direction
 
